@@ -5,8 +5,10 @@
  *   payload; n8n handles per-message delivery, retries, Evolution API.
  * - Mock mode when webhook URL is empty: returns 200 with the payload echo so
  *   development & demos work without n8n running.
- * - Timeout + single retry on network failure (not on 4xx/5xx; those are
- *   surfaced to the user as explicit failures).
+ * - No retry on failure. A campaign must NEVER be duplicated silently: a
+ *   timeout or network error is surfaced to the user, who decides to resend
+ *   manually. n8n webhook should be configured to respond "Immediately" so
+ *   the workflow runs in the background and the request returns fast.
  */
 import type { N8nCampaignPayload } from '@/lib/campaign'
 import { APP } from '@/app/env'
@@ -54,53 +56,43 @@ export async function sendCampaign(
   const body = JSON.stringify(payload)
   const timeout = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
-  // One retry on network/abort errors only. 4xx/5xx are NOT retried.
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const res = await fetchWithTimeout(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      })
-      if (res.ok) {
-        return {
-          ok: true,
-          status: res.status,
-          mock: false,
-          detail: await safeReadText(res),
-        }
-      }
-      // Non-2xx: surface immediately.
+  // Single attempt. No retry: resending a campaign would duplicate messages
+  // to real clients. The user must explicitly retry from the UI.
+  try {
+    const res = await fetchWithTimeout(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+    if (res.ok) {
       return {
-        ok: false,
+        ok: true,
         status: res.status,
         mock: false,
-        error: `El webhook respondió ${res.status} ${res.statusText}`,
         detail: await safeReadText(res),
       }
-    } catch (err) {
-      const isLast = attempt === 2
-      const isAbort =
-        err instanceof DOMException && err.name === 'AbortError'
-      if (isLast) {
-        return {
-          ok: false,
-          status: 0,
-          mock: false,
-          error: isAbort
-            ? `Tiempo de espera agotado (${timeout / 1000}s) al contactar el webhook.`
-            : err instanceof Error
-              ? err.message
-              : 'No se pudo contactar el webhook.',
-        }
-      }
-      // Wait briefly before retry.
-      await new Promise((r) => setTimeout(r, 500))
+    }
+    // Non-2xx: surface immediately.
+    return {
+      ok: false,
+      status: res.status,
+      mock: false,
+      error: `El webhook respondió ${res.status} ${res.statusText}`,
+      detail: await safeReadText(res),
+    }
+  } catch (err) {
+    const isAbort = err instanceof DOMException && err.name === 'AbortError'
+    return {
+      ok: false,
+      status: 0,
+      mock: false,
+      error: isAbort
+        ? `Tiempo de espera agotado (${timeout / 1000}s) al contactar el webhook.`
+        : err instanceof Error
+          ? err.message
+          : 'No se pudo contactar el webhook.',
     }
   }
-
-  // Unreachable: loop returns above.
-  return { ok: false, status: 0, mock: false, error: 'Inalcanzable' }
 }
 
 async function safeReadText(res: Response): Promise<string | undefined> {
