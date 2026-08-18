@@ -4,7 +4,7 @@
  *
  * Mutates nothing; returns a fresh ImportResult.
  */
-import { nanoid } from 'nanoid'
+import { newId } from '@/lib/id'
 import { normalizePhone } from '@/lib/phone'
 import { APP } from '@/app/env'
 import type {
@@ -54,7 +54,7 @@ export function validateRecipients(input: ValidationInput): ImportResult {
     }
 
     const recipient: Recipient = {
-      id: nanoid(20),
+      id: newId(),
       rowNumber: row.rowNumber,
       owner: row.owner.trim(),
       pet: row.pet.trim(),

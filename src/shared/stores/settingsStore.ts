@@ -38,7 +38,7 @@ interface SettingsState {
     name: string
     body: string
     isDefault: boolean
-  }) => Promise<void>
+  }) => Promise<MessageTemplate>
   updateTemplate: (t: MessageTemplate) => Promise<void>
   removeTemplate: (id: string) => Promise<void>
   markDefault: (id: string) => Promise<void>
@@ -132,6 +132,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const templates = await listTemplates()
     set({ templates })
     toast.success('Plantilla creada.')
+    return t
   },
 
   updateTemplate: async (t) => {
