@@ -17,3 +17,4 @@ export {
   Td,
 } from './Table'
 export { MessagePreview } from './MessagePreview'
+export { Stat } from './Stat'

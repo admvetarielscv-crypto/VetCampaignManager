@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Webhook, Save, Eye, EyeOff } from 'lucide-react'
 import { Button, Card, Input, Select } from '@/shared/components/ui'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
+import { maskUrl } from '@/lib/format'
 
 const COUNTRIES = [
   { code: '+51', label: 'Perú (+51)' },
@@ -31,12 +32,7 @@ export function WebhookTab() {
   }
 
   // Mask URL for display when not editing.
-  const masked = webhookUrl
-    ? webhookUrl.replace(/(https?:\/\/)([^/]+)(.*)/, (_, proto, host) => {
-        const visibleHost = host.slice(0, 4)
-        return `${proto}${visibleHost}•••••`
-      })
-    : ''
+  const masked = webhookUrl ? maskUrl(webhookUrl) : ''
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -63,6 +59,7 @@ export function WebhookTab() {
             type={showUrl ? 'url' : 'text'}
             value={showUrl ? webhookUrl : (webhookUrl ? masked : '')}
             onChange={(e) => setWebhookUrl(e.target.value)}
+            readOnly={!showUrl && webhookUrl !== ''}
             placeholder="https://n8n.tu-clinica.com/webhook/campaign"
           />
           <Button

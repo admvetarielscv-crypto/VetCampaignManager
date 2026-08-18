@@ -9,7 +9,7 @@ import {
   Tag,
   Users,
 } from 'lucide-react'
-import { Button, Card, Modal } from '@/shared/components/ui'
+import { Button, Card, Modal, Stat } from '@/shared/components/ui'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
 import {
@@ -18,6 +18,7 @@ import {
   type N8nCampaignPayload,
 } from '@/lib/campaign'
 import { newId } from '@/lib/id'
+import { maskUrl } from '@/lib/format'
 import { sendCampaign } from '@/integrations/n8n'
 
 type SendStatus = 'idle' | 'sending' | 'success' | 'error'
@@ -70,13 +71,10 @@ export function SendCampaign() {
       .sort((a, b) => b.count - a.count)
   }, [sendable])
 
-  const missingTemplates = useMemo(() => {
-    const set = new Set<string>()
-    for (const { message } of sendable) {
-      if (!message.template && !set.has('')) set.add('')
-    }
-    return sendable.some(({ message }) => !message.template)
-  }, [sendable])
+  const missingTemplates = useMemo(
+    () => sendable.some(({ message }) => !message.template),
+    [sendable],
+  )
 
   // Guard: redirect back if no campaign or no sendable recipients.
   useEffect(() => {
@@ -148,8 +146,8 @@ export function SendCampaign() {
             WhatsApp en los próximos minutos.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-            <Stat label="Destinatarios" value={payload?.recipients.length ?? 0} />
-            <Stat label="Campaña ID" value={(payload?.campaign.id ?? '').slice(0, 8)} mono />
+            <Stat size="sm" label="Destinatarios" value={payload?.recipients.length ?? 0} />
+            <Stat size="sm" label="Campaña ID" value={(payload?.campaign.id ?? '').slice(0, 8)} mono />
           </div>
           <div className="mt-6 flex items-center justify-center gap-2">
             <Button variant="secondary" size="md" onClick={() => navigate('/campaign/preview')}>
@@ -203,18 +201,21 @@ export function SendCampaign() {
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Stat
+            size="sm"
             icon={<Users size={14} />}
             label="Destinatarios"
             value={sendable.length}
             tone="vegetal"
           />
           <Stat
+            size="sm"
             icon={<Tag size={14} />}
             label="Categorías"
             value={categoryCounts.length}
             tone="neutral"
           />
           <Stat
+            size="sm"
             label="Modo"
             value={settings.webhookUrl ? 'Real' : 'Demo'}
             tone={settings.webhookUrl ? 'vegetal' : 'warn'}
@@ -319,48 +320,6 @@ export function SendCampaign() {
             : 'Estás en modo demo: no se hará una petición real.'}
         </p>
       </Modal>
-    </div>
+</div>
   )
-}
-
-const toneBg: Record<string, string> = {
-  neutral: 'bg-mist-soft text-ink-soft',
-  vegetal: 'bg-vegetal-soft text-vegetal',
-  warn: 'bg-warn-soft text-warn',
-  danger: 'bg-danger-soft text-danger',
-}
-
-function Stat({
-  label,
-  value,
-  icon,
-  tone = 'neutral',
-  mono,
-}: {
-  label: string
-  value: number | string
-  icon?: React.ReactNode
-  tone?: 'neutral' | 'vegetal' | 'warn' | 'danger'
-  mono?: boolean
-}) {
-  return (
-    <div className="rounded-md bg-paper border border-mist p-3 flex flex-col gap-1">
-      <span className={`flex items-center gap-1.5 text-2xs uppercase tracking-wide rounded-sm w-fit px-1.5 py-0.5 ${toneBg[tone]}`}>
-        {icon}
-        {label}
-      </span>
-      <span
-        className={`text-xl font-semibold leading-none ${mono ? 'font-mono' : 'tnum'}`}
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
-
-function maskUrl(url: string): string {
-  return url.replace(/(https?:\/\/)([^/]+)(.*)/, (_, proto, host) => {
-    const visibleHost = host.slice(0, 4)
-    return `${proto}${visibleHost}•••••`
-  })
 }

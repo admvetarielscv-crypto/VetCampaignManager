@@ -11,7 +11,6 @@
  *   the workflow runs in the background and the request returns fast.
  */
 import type { N8nCampaignPayload } from '@/lib/campaign'
-import { APP } from '@/app/env'
 
 export interface SendResult {
   ok: boolean
@@ -102,9 +101,4 @@ async function safeReadText(res: Response): Promise<string | undefined> {
   } catch {
     return undefined
   }
-}
-
-/** Convenience to build a payload with sane defaults for the app source/schema. */
-export function useAppDefaults() {
-  return { source: APP.source, schema: APP.schema }
 }

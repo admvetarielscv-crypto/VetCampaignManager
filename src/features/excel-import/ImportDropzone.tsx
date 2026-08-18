@@ -1,5 +1,6 @@
 import { useDropzone, type FileRejection } from 'react-dropzone'
 import { FileSpreadsheet, UploadCloud } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
 import { Spinner } from '@/shared/components/ui'
 import { useExcelImport } from './useExcelImport'
@@ -20,7 +21,7 @@ export function ImportDropzone({
       if (firstErr.code === 'file-too-large') {
         importState.reset()
         // Inline message via the parent summary is handled outside; show here too.
-        alert('El archivo supera 10 MB.')
+        toast.error('El archivo supera 10 MB.')
         return
       }
     }
