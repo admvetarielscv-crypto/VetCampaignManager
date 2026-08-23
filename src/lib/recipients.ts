@@ -24,16 +24,21 @@ export interface ValidationInput {
   }>
   /** Optional set of normalized phones already seen (for cross-call dedup). */
   seenPhones?: Set<string>
+  /**
+   * Country code passed to phone normalization. Defaults to APP.defaultCountryCode.
+   * The MVP only validates Peru mobile shape (9 digits, leading 9).
+   */
+  countryCode?: string
 }
 
 export function validateRecipients(input: ValidationInput): ImportResult {
   const seen = input.seenPhones ? new Set(input.seenPhones) : new Set<string>()
   const recipients: Recipient[] = []
   const categoryMap = new Map<string, number>()
+  const countryCode = input.countryCode ?? APP.defaultCountryCode
 
   for (const row of input.rows) {
-    // Duplicate detection needs an E.164 candidate, so normalize first.
-    const { normalized, valid } = normalizePhone(row.rawPhone)
+    const { normalized, valid } = normalizePhone(row.rawPhone, countryCode)
 
     let phoneStatus: Recipient['phoneStatus'] = 'invalid'
     let issue: string | undefined
@@ -95,6 +100,3 @@ export function validateRecipients(input: ValidationInput): ImportResult {
 export function getValidRecipients(result: ImportResult): Recipient[] {
   return result.recipients.filter((r) => r.phoneStatus === 'valid')
 }
-
-/** Re-export schema label for callers that build payloads later. */
-export const SCHEMA = APP.schema

@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import { Stepper, type StepperStep } from '@/shared/components/ui/Stepper'
+import { APP } from '@/app/env'
 
 const steps: StepperStep[] = [
   { id: 'import', label: 'Importar' },
@@ -20,7 +21,7 @@ export function TopBar() {
     <header className="h-topbar shrink-0 border-b border-mist bg-paper flex items-center justify-between px-5">
       <div className="flex items-center gap-3">
         <h1 className="text-md font-semibold leading-none">
-          {isCampaign ? 'Nueva campaña' : 'EfrexzCampaignManager'}
+          {isCampaign ? 'Nueva campaña' : APP.productName}
         </h1>
       </div>
       {isCampaign && stepIndex >= 0 && (

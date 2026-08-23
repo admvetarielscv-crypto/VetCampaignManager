@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand'
 import { toast } from 'sonner'
+import { APP } from '@/app/env'
 import {
   listCategories,
   saveCategory,
@@ -48,7 +49,7 @@ interface SettingsState {
 
 const EMPTY_SETTINGS: AppSettings = {
   webhookUrl: '',
-  defaultCountryCode: '+51',
+  defaultCountryCode: APP.defaultCountryCode,
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

@@ -38,4 +38,28 @@ describe('normalizePhone', () => {
     const { valid } = normalizePhone('+51 - 123456789')
     expect(valid).toBe(false)
   })
+
+  test('accepts countryCode parameter (default "+51") and strips it', () => {
+    expect(normalizePhone('+51987654321')).toEqual({
+      normalized: '+51987654321',
+      valid: true,
+    })
+    expect(normalizePhone('+51 987654321', '+51')).toEqual({
+      normalized: '+51987654321',
+      valid: true,
+    })
+  })
+
+  test('falls back to default "+51" when countryCode is omitted', () => {
+    const { normalized, valid } = normalizePhone('987654321')
+    expect(valid).toBe(true)
+    expect(normalized).toBe('+51987654321')
+  })
+
+  test('non-Peru countryCode still produces Peru E.164 output when valid', () => {
+    // Future-proofing: any country prefix is stripped, validation stays Peru-only.
+    const { normalized, valid } = normalizePhone('+54 - 987654321', '+54')
+    expect(valid).toBe(true)
+    expect(normalized).toBe('+51987654321')
+  })
 })

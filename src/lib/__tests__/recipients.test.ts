@@ -93,4 +93,15 @@ describe('validateRecipients', () => {
       { name: 'Desparasitación', count: 1 },
     ])
   })
+
+  test('passes countryCode through to phone normalization', () => {
+    const result = validateRecipients({
+      rows: [
+        { rowNumber: 2, owner: 'A', pet: 'P', rawPhone: '987654321', category: 'Vacuna' },
+      ],
+      countryCode: '+51',
+    })
+    expect(result.recipients[0].phoneStatus).toBe('valid')
+    expect(result.recipients[0].normalizedPhone).toBe('+51987654321')
+  })
 })
