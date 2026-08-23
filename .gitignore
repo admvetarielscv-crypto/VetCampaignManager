@@ -30,5 +30,8 @@ dist-ssr
 # Vite
 .vite
 
+# Husky internal directory (shims that delegate to .husky/*.sh)
+.husky/_/
+
 # Sample Excel files (kept local only — may contain real client data)
 samples/
