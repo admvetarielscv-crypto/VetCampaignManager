@@ -40,7 +40,7 @@ export function validateRecipients(input: ValidationInput): ImportResult {
   for (const row of input.rows) {
     const { normalized, valid } = normalizePhone(row.rawPhone, countryCode)
 
-    let phoneStatus: Recipient['phoneStatus'] = 'invalid'
+    let phoneStatus: Recipient['phoneStatus']
     let issue: string | undefined
 
     if (!valid) {

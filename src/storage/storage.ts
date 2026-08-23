@@ -52,7 +52,7 @@ export async function setJSON<T>(key: string, data: T): Promise<void> {
   } catch (err) {
     // QuotaExceededError or similar — caller may surface a toast.
     if (err instanceof DOMException && err.name === 'QuotaExceededError') {
-      throw new Error('No hay espacio suficiente en el navegador.')
+      throw new Error('No hay espacio suficiente en el navegador.', { cause: err })
     }
     throw err
   }
