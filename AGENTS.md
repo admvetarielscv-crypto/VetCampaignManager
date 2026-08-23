@@ -29,6 +29,21 @@ npm run dev         # local dev server on http://localhost:5173
 CI (`.github/workflows/ci.yml`) runs lint + typecheck + test + build on every
 push and pull request.
 
+## Git hooks (Husky)
+Local quality gates run automatically via Husky 9 — they catch issues before
+they reach GitHub, saving CI cycles and preventing accidental bad commits:
+- **pre-commit** (`.husky/pre-commit`): runs `lint-staged` (eslint --fix on
+  staged `.ts/.tsx` files) + `tsc --noEmit` (full typecheck)
+- **commit-msg** (`.husky/commit-msg`): runs `commitlint` with
+  `@commitlint/config-conventional` — enforces Conventional Commits format
+  (`fix:`, `feat:`, `chore:`, `refactor:`, etc.). Your commit message **must**
+  start with a type.
+- **pre-push** (`.husky/pre-push`): runs the full test suite (`npm test`) as a
+  safety net before code leaves your machine.
+
+Hooks are installed automatically via the `prepare` script in `package.json`
+on every `npm install`. Config lives in `.husky/` and `commitlint.config.js`.
+
 ## Environment configuration
 - `.env.example` documents all `VITE_*` variables. Copy to `.env` for local dev.
 - `src/app/env.ts` holds static code-level fallbacks (`APP.productName`,
@@ -125,7 +140,9 @@ docker-compose.yml   frontend + (optional) n8n + Evolution orchestration
       dead `defaultCountryCode` setting wired / honest Peru-only UI, dead
       exports removed (`hasCampaign`, `SCHEMA`).
 - [x] P1 — Infra: env validation (zod), GitHub Actions CI, Dockerfile +
-      docker-compose, xlsx vendored.
+      docker-compose, xlsx vendored, Husky hooks (pre-commit + commit-msg +
+      pre-push), all majors upgraded (React 19, Vite 8, router 7, table 9,
+      ESLint 10, types/react-19).
 - [ ] P2 — Supabase + Auth + multi-tenancy (the SaaS blocker block).
 - [ ] P3 — i18n (message catalog) + phone rules per country (when expanding).
 - [ ] P4 — Audit log, send idempotency, HMAC payload signing, error tracking.
