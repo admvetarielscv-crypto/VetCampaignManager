@@ -51,10 +51,12 @@ on every `npm install`. Config lives in `.husky/` and `commitlint.config.js`.
 - `src/app/runtime.ts` validates `import.meta.env` at boot via zod and exports a
   typed `RUNTIME` object. Fail-fast: a missing required var throws with a clear
   message instead of a silent runtime error later.
-- Currently optional vars: `VITE_N8N_WEBHOOK_URL`, `VITE_SUPABASE_URL`,
-  `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`. All empty by default (MVP uses
-  localStorage + settings-store webhook). These establish the pattern for the
-  Supabase migration.
+- Optional vars: `VITE_N8N_WEBHOOK_URL`, `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`.
+- **Backend selection:** when both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+  are set, `HAS_SUPABASE` is true and the app switches from localStorage to
+  Supabase for categories, templates, settings, campaigns, and audit log.
+  Without them, the app runs in single-user localStorage mode (MVP).
 
 ## Architecture conventions (read before editing)
 - **UI is in Spanish.** Code, identifiers, file names, and comments in English.
@@ -143,7 +145,11 @@ docker-compose.yml   frontend + (optional) n8n + Evolution orchestration
       docker-compose, xlsx vendored, Husky hooks (pre-commit + commit-msg +
       pre-push), all majors upgraded (React 19, Vite 8, router 7, table 9,
       ESLint 10, types/react-19).
-- [ ] P2 — Supabase + Auth + multi-tenancy (the SaaS blocker block).
+- [x] P2 — Supabase + Auth + multi-tenancy (the SaaS blocker block): full
+      schema with RLS (tenants, tenant_members, categories, message_templates,
+      clinic_settings, campaigns, audit_log), Supabase Auth + Login page +
+      RequireAuth route guard, tenant store, storage seam with Supabase
+      backend, audit log writes, History UI.
 - [ ] P3 — i18n (message catalog) + phone rules per country (when expanding).
 - [ ] P4 — Audit log, send idempotency, HMAC payload signing, error tracking.
 - [ ] P5 — UX/a11y polish (focus trap, ARIA tabs/sort, mobile drawer, fonts,
