@@ -1,7 +1,10 @@
-import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from '@/shared/components/layout/AppShell'
 import { Spinner } from '@/shared/components/ui/Spinner'
+import { Login } from '@/features/auth/Login'
+import { useAuth } from '@/shared/hooks/useAuth'
+import { HAS_SUPABASE } from '@/integrations/supabase'
 
 const HomePage = lazy(() => import('@/features/home/Home'))
 const ExcelImportPage = lazy(() =>
@@ -22,16 +25,36 @@ const SendCampaignPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/features/settings/Settings').then((m) => ({ default: m.Settings })),
 )
+const HistoryPage = lazy(() =>
+  import('@/features/history/History').then((m) => ({ default: m.History })),
+)
+
+function RequireAuth({ children }: { children: ReactNode }) {
+  const auth = useAuth()
+  const location = useLocation()
+  if (HAS_SUPABASE && !auth.authenticated) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  }
+  return <>{children}</>
+}
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route element={<AppShell />}>
+      <Route path="/login" element={<Login />} />
+      <Route
+        element={
+          <RequireAuth>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
         <Route index element={<HomePage />} />
         <Route path="campaign" element={<ExcelImportPage />} />
         <Route path="campaign/preview" element={<CampaignPreviewPage />} />
         <Route path="campaign/send" element={<SendCampaignPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="history" element={<HistoryPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

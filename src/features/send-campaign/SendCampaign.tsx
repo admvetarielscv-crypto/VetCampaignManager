@@ -12,6 +12,7 @@ import {
 import { Button, Card, Modal, Stat } from '@/shared/components/ui'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
+import { useAuth } from '@/shared/hooks/useAuth'
 import {
   buildCampaignPayload,
   buildSendableRecipients,
@@ -20,6 +21,7 @@ import {
 import { newId } from '@/lib/id'
 import { maskUrl } from '@/lib/format'
 import { sendCampaign } from '@/integrations/n8n'
+import { recordCampaign, recordAudit } from '@/storage/exports'
 
 type SendStatus = 'idle' | 'sending' | 'success' | 'error'
 
@@ -34,6 +36,7 @@ export function SendCampaign() {
   const categories = useSettingsStore((s) => s.categories)
   const templates = useSettingsStore((s) => s.templates)
   const settings = useSettingsStore((s) => s.settings)
+  const auth = useAuth()
 
   const [status, setStatus] = useState<SendStatus>('idle')
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -97,13 +100,38 @@ export function SendCampaign() {
   }
 
   const handleConfirm = async () => {
-    if (!previewPayload) return
+    if (!previewPayload || !result) return
     setConfirmOpen(false)
     setStatus('sending')
     setSendError(null)
     // Snapshot the payload that was actually dispatched.
     setPayload(previewPayload)
     const res = await sendCampaign(previewPayload, settings.webhookUrl)
+    const totals = result.totals
+    // Persist campaign + audit entry (no-ops in localStorage mode).
+    void recordCampaign({
+      id: previewPayload.campaign.id,
+      sentBy: auth.userId,
+      totalRecipients: totals.totalRows,
+      enabledRecipients: sendable.length,
+      invalidRecipients: totals.invalid,
+      duplicateRecipients: totals.duplicate,
+      payload: previewPayload,
+      status: res.ok ? 'sent' : 'failed',
+      errorMessage: res.ok ? null : (res.error ?? 'Error desconocido'),
+    })
+    void recordAudit({
+      userId: auth.userId,
+      action: 'campaign.send',
+      entityType: 'campaign',
+      entityId: previewPayload.campaign.id,
+      metadata: {
+        recipientCount: sendable.length,
+        mock: res.mock,
+        ok: res.ok,
+        status: res.status,
+      },
+    })
     if (res.ok) {
       setStatus('success')
       if (res.mock) {

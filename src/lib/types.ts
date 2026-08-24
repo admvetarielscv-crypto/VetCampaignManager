@@ -79,4 +79,6 @@ export interface AppSettings {
   webhookUrl: string
   /** Default country code for phone normalization, e.g. "+51" (Peru). */
   defaultCountryCode: string
+  /** HMAC secret for signing n8n payloads. Supabase mode only. */
+  hmacSecret?: string
 }

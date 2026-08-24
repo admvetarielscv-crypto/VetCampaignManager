@@ -2,15 +2,28 @@ import { type ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { useHydrateSettings } from '@/shared/hooks/useHydrateSettings'
+import { useAuth } from '@/shared/hooks/useAuth'
+import { useTenantStore } from '@/shared/stores/tenantStore'
+import { HAS_SUPABASE } from '@/integrations/supabase'
 import { Spinner } from '@/shared/components/ui'
 
 export function AppProviders({ children }: { children: ReactNode }) {
-  const hydrated = useHydrateSettings()
+  const settingsHydrated = useHydrateSettings()
 
-  if (!hydrated) {
+  const auth = useAuth()
+  const tenantStore = useTenantStore()
+
+  if (HAS_SUPABASE && !tenantStore.hydrated && auth.authenticated) {
+    void tenantStore.hydrate()
+  }
+
+  const loading = !settingsHydrated || (HAS_SUPABASE && !auth.authenticated)
+
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen flex-col items-center justify-center gap-3">
         <Spinner className="h-6 w-6" />
+        <p className="text-xs text-ink-mute">Cargando…</p>
       </div>
     )
   }
