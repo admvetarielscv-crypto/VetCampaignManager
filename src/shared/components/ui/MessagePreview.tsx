@@ -9,6 +9,11 @@ export interface MessagePreviewProps {
   message: string
   /** When true, renders an italic caption "Así lo verá {recipientName}". */
   caption?: boolean
+  /**
+   * Data URI of an attached image (template media). Rendered inside the
+   * bubble above the text, mimicking WhatsApp's image + caption layout.
+   */
+  mediaUrl?: string | null
   className?: string
 }
 
@@ -16,6 +21,7 @@ export function MessagePreview({
   recipientName,
   message,
   caption = true,
+  mediaUrl = null,
   className,
 }: MessagePreviewProps) {
   return (
@@ -38,6 +44,13 @@ export function MessagePreview({
         {/* Bubble */}
         <div className="p-3 bg-mist-soft/30 min-h-[6rem]">
           <div className="rounded-md bg-[#dcf8c6] px-3 py-2 max-w-[85%] whitespace-pre-wrap text-sm text-ink leading-relaxed shadow-sm">
+            {mediaUrl && (
+              <img
+                src={mediaUrl}
+                alt="Imagen adjunta"
+                className="rounded-sm mb-2 max-h-48 w-full object-cover"
+              />
+            )}
             {message || (
               <span className="text-ink-mute italic">
                 (El mensaje aparecerá aquí)

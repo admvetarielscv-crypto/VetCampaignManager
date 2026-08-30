@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  Image as ImageIcon,
   Send,
   Tag,
   Users,
@@ -76,6 +77,11 @@ export function SendCampaign() {
 
   const missingTemplates = useMemo(
     () => sendable.some(({ message }) => !message.template),
+    [sendable],
+  )
+
+  const withMediaCount = useMemo(
+    () => sendable.filter(({ message }) => message.template?.media).length,
     [sendable],
   )
 
@@ -227,7 +233,7 @@ export function SendCampaign() {
           Evolution API.
         </p>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat
             size="sm"
             icon={<Users size={14} />}
@@ -240,6 +246,13 @@ export function SendCampaign() {
             icon={<Tag size={14} />}
             label="Categorías"
             value={categoryCounts.length}
+            tone="neutral"
+          />
+          <Stat
+            size="sm"
+            icon={<ImageIcon size={14} />}
+            label="Con imagen"
+            value={withMediaCount}
             tone="neutral"
           />
           <Stat

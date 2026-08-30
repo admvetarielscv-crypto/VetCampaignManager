@@ -44,11 +44,14 @@ export async function sendCampaign(
 ): Promise<SendResult> {
   // Mock mode: empty webhook URL → pretend success and echo the payload shape.
   if (!webhookUrl.trim()) {
+    const withMedia = payload.recipients.filter((r) => r.mediaKey).length
     return {
       ok: true,
       status: 200,
       mock: true,
-      detail: `Modo demo — payload con ${payload.recipients.length} destinatario(s) construido correctamente.`,
+      detail: `Modo demo — payload con ${payload.recipients.length} destinatario(s)${
+        withMedia > 0 ? `, ${withMedia} con imagen adjunta` : ''
+      } construido correctamente.`,
     }
   }
 

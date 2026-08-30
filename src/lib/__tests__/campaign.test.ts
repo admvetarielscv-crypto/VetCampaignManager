@@ -143,6 +143,52 @@ describe('buildCampaignPayload', () => {
     const payload = buildCampaignPayload(sendable, { campaignId: 'C' })
     expect(payload.recipients[0].phone).toBe('+51 - 980000000')
   })
+
+  test('omits media when no template carries an image', () => {
+    const r1 = mkRecipient({ id: '1', category: 'Vacuna' })
+    const sendable = buildSendableRecipients([r1], cats, templates, { '1': true })
+    const payload = buildCampaignPayload(sendable, { campaignId: 'C' })
+    expect(payload.media).toBeUndefined()
+    expect(payload.recipients[0].mediaKey).toBeUndefined()
+  })
+
+  test('includes campaign-level media map and per-recipient mediaKey', () => {
+    const withImage = templates.map((t) =>
+      t.id === 't-vac'
+        ? {
+            ...t,
+            media: {
+              data: 'data:image/jpeg;base64,QUJD',
+              mimetype: 'image/jpeg',
+              fileName: 'vacuna.jpg',
+              bytes: 3,
+            },
+          }
+        : t,
+    )
+    const recipients = [
+      mkRecipient({ id: '1', category: 'Vacuna' }),
+      mkRecipient({ id: '2', category: 'Vacuna' }),
+      mkRecipient({ id: '3', category: 'Hidratación' }),
+    ]
+    const sendable = buildSendableRecipients(recipients, cats, withImage, {
+      '1': true,
+      '2': true,
+      '3': true,
+    })
+    const payload = buildCampaignPayload(sendable, { campaignId: 'C' })
+
+    expect(payload.media).toEqual({
+      't-vac': {
+        data: 'data:image/jpeg;base64,QUJD',
+        mimetype: 'image/jpeg',
+        fileName: 'vacuna.jpg',
+      },
+    })
+    expect(payload.recipients[0].mediaKey).toBe('t-vac')
+    expect(payload.recipients[1].mediaKey).toBe('t-vac')
+    expect(payload.recipients[2].mediaKey).toBeUndefined()
+  })
 })
 
 describe('countByStatus', () => {
