@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { parseWorkbook } from '@/lib/excel'
 import { validateRecipients } from '@/lib/recipients'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
+import { useSettingsStore } from '@/shared/stores/settingsStore'
 import type { ImportResult } from '@/lib/types'
 
 export type ImportStatus = 'idle' | 'parsing' | 'success' | 'error'
@@ -14,6 +15,7 @@ export function useExcelImport() {
   const [status, setStatus] = useState<ImportStatus>('idle')
   const [error, setError] = useState<ImportErrorState | null>(null)
   const setParsedResult = useCampaignStore((s) => s.setParsedResult)
+  const countryCode = useSettingsStore((s) => s.settings.defaultCountryCode)
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -30,6 +32,7 @@ export function useExcelImport() {
 
         const result: ImportResult = validateRecipients({
           rows: parsed.rows,
+          countryCode,
         })
 
         if (parsed.rows.length === 0 && result.recipients.length === 0) {
@@ -49,7 +52,7 @@ export function useExcelImport() {
         setError({ message })
       }
     },
-    [setParsedResult],
+    [setParsedResult, countryCode],
   )
 
   const reset = useCallback(() => {

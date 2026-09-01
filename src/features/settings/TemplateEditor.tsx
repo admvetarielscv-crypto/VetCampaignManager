@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Save, Trash2, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Button,
   Input,
@@ -7,8 +8,10 @@ import {
   Select,
 } from '@/shared/components/ui'
 import { VARIABLES, DEMO_CONTEXT, renderTemplate } from '@/lib/template'
+import { CAPTION_WARN_CHARS } from '@/lib/image'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
-import type { MessageTemplate } from '@/lib/types'
+import type { MessageTemplate, TemplateMedia } from '@/lib/types'
+import { TemplateMediaPicker } from './TemplateMediaPicker'
 
 interface Props {
   template: MessageTemplate
@@ -27,6 +30,7 @@ export function TemplateEditor({ template, onDelete }: Props) {
   const [body, setBody] = useState(template.body)
   const [categoryId, setCategoryId] = useState<string | null>(template.categoryId)
   const [isDefault, setIsDefault] = useState(template.isDefault)
+  const [media, setMedia] = useState<TemplateMedia | null>(template.media ?? null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -57,7 +61,8 @@ export function TemplateEditor({ template, onDelete }: Props) {
     name !== template.name ||
     body !== template.body ||
     categoryId !== template.categoryId ||
-    isDefault !== template.isDefault
+    isDefault !== template.isDefault ||
+    JSON.stringify(media ?? null) !== JSON.stringify(template.media ?? null)
 
   const handleSave = async () => {
     const next: MessageTemplate = {
@@ -66,9 +71,20 @@ export function TemplateEditor({ template, onDelete }: Props) {
       body,
       categoryId,
       isDefault,
+      media,
     }
-    // saveTemplate inside updateTemplate already enforces one-default invariant.
-    await updateTemplate(next)
+    try {
+      // saveTemplate inside updateTemplate already enforces one-default invariant.
+      await updateTemplate(next)
+    } catch (err) {
+      const quota =
+        err instanceof Error && err.name === 'QuotaExceededError'
+      toast.error(
+        quota
+          ? 'No hay espacio suficiente para guardar la imagen. Quita imágenes de otras plantillas o usa una más liviana.'
+          : 'No se pudo guardar la plantilla. Intenta de nuevo.',
+      )
+    }
   }
 
   const handleDelete = async () => {
@@ -209,8 +225,22 @@ export function TemplateEditor({ template, onDelete }: Props) {
         <MessagePreview
           recipientName={DEMO_CONTEXT.owner}
           message={render.text}
+          mediaUrl={media?.data ?? null}
         />
       </div>
+
+      {/* Attached image */}
+      <TemplateMediaPicker media={media} onChange={setMedia} />
+
+      {media && body.length > CAPTION_WARN_CHARS && (
+        <div className="flex items-start gap-2 rounded-sm bg-warn-soft/50 border border-warn/20 p-2.5 text-xs text-warn">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>
+            WhatsApp limita el texto de un mensaje con imagen a ~1024
+            caracteres. Acorta el mensaje para que no se corte.
+          </span>
+        </div>
+      )}
 
       {/* Action bar */}
       <div className="flex items-center justify-between pt-2 border-t border-mist">

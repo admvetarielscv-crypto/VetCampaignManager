@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -11,7 +11,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { Button, Input, Select } from '@/shared/components/ui'
+import { Button, Input, Select, Stat } from '@/shared/components/ui'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
 import {
@@ -39,9 +39,13 @@ export function CampaignPreview() {
   const templates = useSettingsStore((s) => s.templates)
 
   // Guard: if there's no campaign in memory, go back to import with a toast.
+  const notifiedRef = useRef(false)
   useEffect(() => {
     if (!result || result.recipients.length === 0) {
-      toast.info('Importa un archivo Excel para ver la campaña.')
+      if (!notifiedRef.current) {
+        toast.info('Importa un archivo Excel para ver la campaña.')
+        notifiedRef.current = true
+      }
       navigate('/campaign', { replace: true })
     }
   }, [result, navigate])
@@ -124,11 +128,11 @@ export function CampaignPreview() {
 
       {/* Stat chips */}
       <div className="flex flex-wrap gap-2 mb-4 text-xs">
-        <Stat label="Total" value={counts.total} tone="neutral" />
-        <Stat label="A enviar" value={toSendCount} tone="vegetal" highlight />
-        <Stat label="Válidos" value={counts.valid} tone="vegetal" />
-        <Stat label="Duplicados" value={counts.duplicate} tone="warn" />
-        <Stat label="Inválidos" value={counts.invalid} tone="danger" />
+        <Stat variant="chip" label="Total" value={counts.total} tone="neutral" />
+        <Stat variant="chip" label="A enviar" value={toSendCount} tone="vegetal" highlight />
+        <Stat variant="chip" label="Válidos" value={counts.valid} tone="vegetal" />
+        <Stat variant="chip" label="Duplicados" value={counts.duplicate} tone="warn" />
+        <Stat variant="chip" label="Inválidos" value={counts.invalid} tone="danger" />
       </div>
 
       {/* Filters */}
@@ -232,35 +236,6 @@ export function CampaignPreview() {
           <ArrowRight size={16} />
         </Button>
       </div>
-    </div>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-  highlight,
-}: {
-  label: string
-  value: number
-  tone: 'neutral' | 'vegetal' | 'warn' | 'danger'
-  highlight?: boolean
-}) {
-  const cls = {
-    neutral: 'bg-mist-soft text-ink-soft',
-    vegetal: 'bg-vegetal-soft text-vegetal',
-    warn: 'bg-warn-soft text-warn',
-    danger: 'bg-danger-soft text-danger',
-  }[tone]
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border border-mist px-2.5 py-1 ${
-        highlight ? 'ring-1 ring-vegetal/30' : ''
-      } ${cls}`}
-    >
-      <span className="font-semibold tnum">{value}</span>
-      {label}
-    </span>
+</div>
   )
 }

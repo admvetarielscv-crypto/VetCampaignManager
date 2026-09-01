@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, RotateCcw, Users, Check, X, Copy, Tag } from 'lucide-react'
-import { Button, Card } from '@/shared/components/ui'
+import { Button, Card, Stat } from '@/shared/components/ui'
 import { ImportErrorList } from './ImportErrorList'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
 import type { ImportResult } from '@/lib/types'
@@ -9,35 +9,6 @@ interface Props {
   result: ImportResult
   fileName: string
   onReset: () => void
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: number
-  tone: 'neutral' | 'vegetal' | 'danger' | 'warn'
-}) {
-  const toneRing = {
-    neutral: 'bg-mist-soft text-ink-soft',
-    vegetal: 'bg-vegetal-soft text-vegetal',
-    danger: 'bg-danger-soft text-danger',
-    warn: 'bg-warn-soft text-warn',
-  }[tone]
-
-  return (
-    <div className="rounded-md bg-paper border border-mist p-4 flex flex-col gap-1">
-      <span className="flex items-center gap-2 text-2xs uppercase tracking-wide text-ink-mute">
-        <span className={`rounded-sm p-1 ${toneRing}`}>{icon}</span>
-        {label}
-      </span>
-      <span className="text-2xl font-semibold tnum leading-none">{value}</span>
-    </div>
-  )
 }
 
 export function ImportSummary({ result, fileName, onReset }: Props) {
@@ -70,25 +41,25 @@ export function ImportSummary({ result, fileName, onReset }: Props) {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
+        <Stat
           icon={<Users size={14} />}
           label="Total"
           value={result.totals.totalRows}
           tone="neutral"
         />
-        <StatCard
+        <Stat
           icon={<Check size={14} />}
           label="Válidos"
           value={result.totals.valid}
           tone="vegetal"
         />
-        <StatCard
+        <Stat
           icon={<X size={14} />}
           label="Inválidos"
           value={result.totals.invalid}
           tone="danger"
         />
-        <StatCard
+        <Stat
           icon={<Copy size={14} />}
           label="Duplicados"
           value={result.totals.duplicate}

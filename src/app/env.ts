@@ -4,6 +4,7 @@
  * localStorage via the settings store. These are code-level fallbacks.
  */
 export const APP = {
+  productName: 'VetCampaignManager',
   clinicName: 'Clínica Ariels',
   defaultCountryCode: '+51', // Peru
   schema: 'vetcampaign/v1',

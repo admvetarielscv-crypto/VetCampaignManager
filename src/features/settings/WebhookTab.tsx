@@ -1,42 +1,24 @@
 import { useState } from 'react'
 import { Webhook, Save, Eye, EyeOff } from 'lucide-react'
-import { Button, Card, Input, Select } from '@/shared/components/ui'
+import { Button, Card, Input } from '@/shared/components/ui'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
-
-const COUNTRIES = [
-  { code: '+51', label: 'Perú (+51)' },
-  { code: '+54', label: 'Argentina (+54)' },
-  { code: '+52', label: 'México (+52)' },
-  { code: '+57', label: 'Colombia (+57)' },
-  { code: '+56', label: 'Chile (+56)' },
-  { code: '+34', label: 'España (+34)' },
-]
+import { maskUrl } from '@/lib/format'
 
 export function WebhookTab() {
   const settings = useSettingsStore((s) => s.settings)
   const updateSettings = useSettingsStore((s) => s.updateSettings)
 
   const [webhookUrl, setWebhookUrl] = useState(settings.webhookUrl)
-  const [defaultCountryCode, setDefaultCountryCode] = useState(
-    settings.defaultCountryCode,
-  )
   const [showUrl, setShowUrl] = useState(false)
 
-  const dirty =
-    webhookUrl !== settings.webhookUrl ||
-    defaultCountryCode !== settings.defaultCountryCode
+  const dirty = webhookUrl !== settings.webhookUrl
 
   const handleSave = () => {
-    void updateSettings({ webhookUrl: webhookUrl.trim(), defaultCountryCode })
+    void updateSettings({ webhookUrl: webhookUrl.trim() })
   }
 
   // Mask URL for display when not editing.
-  const masked = webhookUrl
-    ? webhookUrl.replace(/(https?:\/\/)([^/]+)(.*)/, (_, proto, host) => {
-        const visibleHost = host.slice(0, 4)
-        return `${proto}${visibleHost}•••••`
-      })
-    : ''
+  const masked = webhookUrl ? maskUrl(webhookUrl) : ''
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -63,6 +45,7 @@ export function WebhookTab() {
             type={showUrl ? 'url' : 'text'}
             value={showUrl ? webhookUrl : (webhookUrl ? masked : '')}
             onChange={(e) => setWebhookUrl(e.target.value)}
+            readOnly={!showUrl && webhookUrl !== ''}
             placeholder="https://n8n.tu-clinica.com/webhook/campaign"
           />
           <Button
@@ -87,23 +70,15 @@ export function WebhookTab() {
           País por defecto
         </h3>
         <p className="text-sm text-ink-soft mb-4">
-          Se usa para normalizar teléfonos sin código de país al importar el
-          Excel. Los móviles peruanos son 9 dígitos empezando por 9.
+          VetCampaignManager normaliza los teléfonos asumiendo móviles peruanos
+          de 9 dígitos empezando por 9 (prefijo +51). Esta configuración se
+          conserva para futuras clínicas internacionales.
         </p>
-        <label className="text-sm text-ink-soft block mb-1.5">
-          Prefijo país
-        </label>
-        <Select
-          value={defaultCountryCode}
-          onChange={(e) => setDefaultCountryCode(e.target.value)}
+        <Input
+          value={settings.defaultCountryCode}
+          readOnly
           className="max-w-xs"
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.label}
-            </option>
-          ))}
-        </Select>
+        />
       </Card>
 
       <div className="flex justify-end">

@@ -1,4 +1,4 @@
-import { AlertTriangle, MessageSquare, Star, Tag, X } from 'lucide-react'
+import { AlertTriangle, Image as ImageIcon, MessageSquare, Star, Tag, X } from 'lucide-react'
 import { Chip, EmptyState, MessagePreview } from '@/shared/components/ui'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
 import { renderMessageForRecipient } from '@/lib/campaign'
@@ -112,6 +112,18 @@ export function MessagePreviewPanel({ recipient, onClose }: Props) {
           </div>
         )}
 
+        {msg.template?.media && (
+          <div className="flex items-center gap-2 text-sm">
+            <ImageIcon size={14} className="text-vegetal" />
+            <span className="text-ink-soft">
+              Se enviará con imagen:{' '}
+              <span className="font-medium text-ink truncate">
+                {msg.template.media.fileName}
+              </span>
+            </span>
+          </div>
+        )}
+
         {msg.unknown.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-danger">
             <AlertTriangle size={12} />
@@ -137,6 +149,7 @@ export function MessagePreviewPanel({ recipient, onClose }: Props) {
           recipientName={recipient.owner || 'Destinatario'}
           message={msg.text}
           caption={false}
+          mediaUrl={msg.template?.media?.data ?? null}
         />
       </div>
     </div>

@@ -11,7 +11,6 @@
  *   the workflow runs in the background and the request returns fast.
  */
 import type { N8nCampaignPayload } from '@/lib/campaign'
-import { APP } from '@/app/env'
 
 export interface SendResult {
   ok: boolean
@@ -45,11 +44,14 @@ export async function sendCampaign(
 ): Promise<SendResult> {
   // Mock mode: empty webhook URL → pretend success and echo the payload shape.
   if (!webhookUrl.trim()) {
+    const withMedia = payload.recipients.filter((r) => r.mediaKey).length
     return {
       ok: true,
       status: 200,
       mock: true,
-      detail: `Modo demo — payload con ${payload.recipients.length} destinatario(s) construido correctamente.`,
+      detail: `Modo demo — payload con ${payload.recipients.length} destinatario(s)${
+        withMedia > 0 ? `, ${withMedia} con imagen adjunta` : ''
+      } construido correctamente.`,
     }
   }
 
@@ -102,9 +104,4 @@ async function safeReadText(res: Response): Promise<string | undefined> {
   } catch {
     return undefined
   }
-}
-
-/** Convenience to build a payload with sane defaults for the app source/schema. */
-export function useAppDefaults() {
-  return { source: APP.source, schema: APP.schema }
 }

@@ -197,32 +197,8 @@ async function testReal4xx() {
   }
 }
 
-async function testNetworkRetry() {
-  console.log('\n— sendCampaign: network retry (1 retry on throw, then success) —')
-  const globalRef = globalThis as unknown as { fetch: typeof fetch }
-  const original = globalRef.fetch
-  let calls = 0
-  globalRef.fetch = async () => {
-    calls++
-    if (calls === 1) throw new Error('network down')
-    return { ok: true, status: 200, statusText: 'OK', text: async () => 'ok' } as unknown as Response
-  }
-  try {
-    const payload: N8nCampaignPayload = {
-      schema: 'vetcampaign/v1',
-      campaign: { id: 'C1', sentAt: 't', source: 'VetCampaignManager' },
-      recipients: [],
-    }
-    const res = await sendCampaign(payload, 'https://x.example/webhook', { timeoutMs: 1000 })
-    assert('retry eventually ok', res.ok === true)
-    assert('exactly 2 calls (initial + 1 retry)', calls === 2, { calls })
-  } finally {
-    globalRef.fetch = original
-  }
-}
-
-async function testNetworkAllFail() {
-  console.log('\n— sendCampaign: all network calls fail —')
+async function testNetworkError() {
+  console.log('\n— sendCampaign: network error surfaces, single attempt —')
   const globalRef = globalThis as unknown as { fetch: typeof fetch }
   const original = globalRef.fetch
   let calls = 0
@@ -236,28 +212,31 @@ async function testNetworkAllFail() {
       campaign: { id: 'C1', sentAt: 't', source: 'VetCampaignManager' },
       recipients: [],
     }
-    const res = await sendCampaign(payload, 'https://x.example/webhook', { timeoutMs: 500 })
-    assert('final result not ok', res.ok === false)
-    assert('exactly 2 calls', calls === 2, { calls })
-    assert('error includes original message', /network down/.test(res.error ?? ''), res.error)
+    const res = await sendCampaign(payload, 'https://x.example/webhook')
+    assert('not ok', res.ok === false)
+    assert('no retry (single call)', calls === 1, { calls })
+    assert(
+      'error surfaces original message',
+      /network down/.test(res.error ?? ''),
+      res.error,
+    )
   } finally {
     globalRef.fetch = original
   }
 }
 
-async function testAbortTimeout() {
-  console.log('\n— sendCampaign: timeout handling —')
+async function testTimeout() {
+  console.log('\n— sendCampaign: timeout surfaces as abort error —')
   const globalRef = globalThis as unknown as { fetch: typeof fetch }
   const original = globalRef.fetch
-  // Simulate AbortError on first call, then success on retry.
   let calls = 0
   globalRef.fetch = async (_u: string | URL | Request, init?: RequestInit) => {
     calls++
-    if (init?.signal?.aborted) {
-      const e = new DOMException('Aborted', 'AbortError')
-      throw e
-    }
-    return { ok: true, status: 200, statusText: 'OK', text: async () => 'ok' } as unknown as Response
+    return new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => {
+        reject(new DOMException('Aborted', 'AbortError'))
+      })
+    })
   }
   try {
     const payload: N8nCampaignPayload = {
@@ -265,12 +244,18 @@ async function testAbortTimeout() {
       campaign: { id: 'C1', sentAt: 't', source: 'VetCampaignManager' },
       recipients: [],
     }
-    const res = await sendCampaign(payload, 'https://x.example/webhook', { timeoutMs: 1500 })
-    // Success: the fetch factory above never actually aborts, just returns
-    assert('fake-success returns ok', res.ok === true)
+    const res = await sendCampaign(payload, 'https://x.example/webhook', {
+      timeoutMs: 100,
+    })
+    assert('not ok', res.ok === false)
+    assert('single call (no retry)', calls === 1, { calls })
+    assert(
+      'error reports timeout',
+      /Tiempo de espera/i.test(res.error ?? ''),
+      res.error,
+    )
   } finally {
     globalRef.fetch = original
-    console.log(`  (calls: ${calls})`)
   }
 }
 
@@ -279,9 +264,8 @@ async function main() {
   await testMockMode()
   await testRealSuccess()
   await testReal4xx()
-  await testNetworkRetry()
-  await testNetworkAllFail()
-  await testAbortTimeout()
+  await testNetworkError()
+  await testTimeout()
   console.log('\nDONE')
 }
 

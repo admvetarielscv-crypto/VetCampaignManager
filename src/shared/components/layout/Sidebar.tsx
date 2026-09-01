@@ -1,13 +1,18 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Send, Settings, PawPrint } from 'lucide-react'
+import { Home, Send, Settings, PawPrint, History } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { APP } from '@/app/env'
+import { HAS_SUPABASE } from '@/integrations/supabase'
 
-const nav = [
+const baseNav = [
   { to: '/', label: 'Inicio', icon: Home, end: true },
   { to: '/campaign', label: 'Campaña', icon: Send, end: false },
   { to: '/settings', label: 'Ajustes', icon: Settings, end: false },
-]
+] as const
+
+const nav = HAS_SUPABASE
+  ? [...baseNav, { to: '/history', label: 'Historial', icon: History, end: false }]
+  : baseNav
 
 export function Sidebar() {
   return (

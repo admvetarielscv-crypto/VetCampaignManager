@@ -7,7 +7,6 @@ import { newId } from '@/lib/id'
 import { setJSON } from './storage'
 import { KEYS } from './keys'
 import { listCategories, listTemplates } from './exports'
-import { DEFAULT_SETTINGS, getSettings } from './settings'
 import type { Category, MessageTemplate } from '@/lib/types'
 
 const SEED_CATEGORIES: Array<Omit<Category, 'id'>> = [
@@ -48,11 +47,5 @@ export async function seedIfEmpty(): Promise<void> {
       },
     ]
     await setJSON(KEYS.templates, seeded)
-  }
-
-  // Settings: ensure present, but do not overwrite if user already configured.
-  const existing = await getSettings()
-  if (!existing || !existing.defaultCountryCode) {
-    await setJSON(KEYS.settings, DEFAULT_SETTINGS)
   }
 }

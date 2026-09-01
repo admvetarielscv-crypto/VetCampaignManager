@@ -1,0 +1,41 @@
+# VetCampaignManager — local orchestration.
+# The frontend is the only service defined here. n8n + Evolution API run in
+# the clinic's own Docker stack; this compose can extend to include them for
+# all-in-one local development by uncommenting the n8n service below.
+
+services:
+  frontend:
+    build: .
+    image: vetcampaign:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # Pass env vars at runtime (override .env at build time if needed).
+    env_file:
+      - .env
+    # Healthcheck: nginx serves a 200 on the SPA root.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ── Optional: n8n for local all-in-one dev ──────────────────────────────────
+  # Uncomment to run n8n alongside the frontend. Configure your workflow to
+  # listen on /webhook/campaign and forward to Evolution API.
+  #
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   ports:
+  #     - "5678:5678"
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=admin
+  #     - N8N_BASIC_AUTH_PASSWORD=changeme
+  #     - GENERIC_TIMEZONE=America/Lima
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #   restart: unless-stopped
+
+# volumes:
+#   n8n_data:
