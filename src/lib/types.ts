@@ -58,6 +58,23 @@ export interface Category {
   name: string
 }
 
+/**
+ * Image attached to a template. Stored locally as a data URI (base64) so the
+ * payload can carry the actual image to n8n → Evolution API `sendMedia`
+ * without needing any public hosting. Recipients receive the real image in
+ * WhatsApp, never a URL.
+ */
+export interface TemplateMedia {
+  /** Data URI, e.g. `data:image/jpeg;base64,...`. */
+  data: string
+  /** MIME type of the encoded image (post-resize), e.g. `image/jpeg`. */
+  mimetype: string
+  /** Original file name, kept for display and Evolution API `fileName`. */
+  fileName: string
+  /** Approximate byte size of the data URI payload. */
+  bytes: number
+}
+
 export interface MessageTemplate {
   /** Stable client-side id (nanoid). */
   id: string
@@ -72,6 +89,8 @@ export interface MessageTemplate {
   body: string
   /** True when this is the global default fallback template. */
   isDefault: boolean
+  /** Optional image sent alongside the message (message becomes the caption). */
+  media?: TemplateMedia | null
 }
 
 export interface AppSettings {
@@ -79,4 +98,6 @@ export interface AppSettings {
   webhookUrl: string
   /** Default country code for phone normalization, e.g. "+51" (Peru). */
   defaultCountryCode: string
+  /** HMAC secret for signing n8n payloads. Supabase mode only. */
+  hmacSecret?: string
 }

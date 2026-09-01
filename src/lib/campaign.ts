@@ -145,12 +145,27 @@ export function countByStatus(recipients: Recipient[]): {
 // ── n8n payload contract ──────────────────────────────────────────────────────
 
 /**
+ * An image attached to a template, as sent to n8n → Evolution API
+ * `sendMedia`. The `data` is a data URI (base64) so no public hosting is
+ * needed; n8n passes it through as the `media` field.
+ */
+export interface N8nMediaItem {
+  data: string
+  mimetype: string
+  fileName: string
+}
+
+/**
  * The payload posted to the n8n webhook. Versioned via `schema` so the n8n
  * workflow can route on schema in the future without breaking older flows.
  *
  * Each recipient carries the fully-rendered message so n8n / Evolution API
  * just forwards it. The per-recipient `id` lets future delivery reports join
  * back to a Supabase `deliveries` table.
+ *
+ * Media is deduplicated: images live once in the campaign-level `media` map
+ * (keyed by template id); recipients reference them via `mediaKey`. Absent
+ * when no recipient's template has an attached image.
  */
 export interface N8nCampaignPayload {
   schema: string
@@ -161,6 +176,7 @@ export interface N8nCampaignPayload {
     /** Open slot for future fields (branchId, scheduledFor, …) without breaking. */
     [key: string]: unknown
   }
+  media?: Record<string, N8nMediaItem>
   recipients: Array<{
     id: string
     owner: string
@@ -168,6 +184,8 @@ export interface N8nCampaignPayload {
     phone: string
     category: string
     message: string
+    /** Key into `media` when this recipient's template has an attached image. */
+    mediaKey?: string
   }>
 }
 
@@ -191,6 +209,19 @@ export function buildCampaignPayload(
   sendable: SendableRecipient[],
   opts: BuildPayloadOptions,
 ): N8nCampaignPayload {
+  const media: Record<string, N8nMediaItem> = {}
+  for (const { message } of sendable) {
+    const m = message.template?.media
+    if (m && message.template && !media[message.template.id]) {
+      media[message.template.id] = {
+        data: m.data,
+        mimetype: m.mimetype,
+        fileName: m.fileName,
+      }
+    }
+  }
+  const hasMedia = Object.keys(media).length > 0
+
   return {
     schema: opts.schema ?? 'vetcampaign/v1',
     campaign: {
@@ -198,6 +229,7 @@ export function buildCampaignPayload(
       sentAt: opts.sentAt ?? new Date().toISOString(),
       source: opts.source ?? 'VetCampaignManager',
     },
+    ...(hasMedia ? { media } : {}),
     recipients: sendable.map(({ recipient, message }) => ({
       id: recipient.id,
       owner: recipient.owner,
@@ -205,6 +237,7 @@ export function buildCampaignPayload(
       phone: recipient.normalizedPhone ?? recipient.rawPhone,
       category: recipient.category,
       message: message.text,
+      ...(message.template?.media ? { mediaKey: message.template.id } : {}),
     })),
   }
 }

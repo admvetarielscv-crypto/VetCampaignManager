@@ -3,8 +3,6 @@ import { Plus, MessageSquare, Star } from 'lucide-react'
 import { Button, Card, EmptyState } from '@/shared/components/ui'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
 import { TemplateEditor } from './TemplateEditor'
-import { newId } from '@/lib/id'
-import type { MessageTemplate } from '@/lib/types'
 
 export function TemplatesTab() {
   const templates = useSettingsStore((s) => s.templates)
@@ -32,30 +30,13 @@ export function TemplatesTab() {
   }
 
   const handleNew = async () => {
-    // Optimistically add an empty template so the editor receives it.
-    const draft: MessageTemplate = {
-      id: newId(),
+    const created = await addTemplate({
       categoryId: null,
       name: 'Nueva plantilla',
       body: 'Hola {{owner}} 👋\n\nNos encantaría ver a {{pet}} 🐾\n\nResponde para agendar.',
       isDefault: templates.every((t) => !t.isDefault),
-    }
-    await addTemplate({
-      categoryId: draft.categoryId,
-      name: draft.name,
-      body: draft.body,
-      isDefault: draft.isDefault,
     })
-    // The store will reload templates; pick the new one. We match by name+body
-    // since the store assigns its own id via makeTemplate.
-    setTimeout(() => {
-      const added = useSettingsStore
-        .getState()
-        .templates.find(
-          (t) => t.name === draft.name && t.body === draft.body,
-        )
-      if (added) setSelectedId(added.id)
-    }, 0)
+    setSelectedId(created.id)
   }
 
   return (
@@ -119,7 +100,7 @@ export function TemplatesTab() {
       <div>
         {selected ? (
           <Card className="p-5">
-            <TemplateEditor template={selected} onDelete={() => {}} />
+            <TemplateEditor key={selected.id} template={selected} onDelete={() => {}} />
           </Card>
         ) : (
           <Card>

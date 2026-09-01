@@ -95,8 +95,3 @@ export const useCampaignStore = create<CampaignState>((set) => ({
       recipientEnabled: {},
     }),
 }))
-
-/** Convenience selector for "is there a current campaign in memory". */
-export function hasCampaign(s: CampaignState): boolean {
-  return s.result !== null && s.result.recipients.length > 0
-}

@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react'
 import {
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  tableFeatures,
+  rowSortingFeature,
+  columnFilteringFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  createSortedRowModel,
+  createFilteredRowModel,
+  createColumnHelper,
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table'
@@ -36,12 +41,23 @@ const statusLabel: Record<Recipient['phoneStatus'], string> = {
   duplicate: 'Duplicado',
 }
 
+const features = tableFeatures({
+  rowSortingFeature,
+  columnFilteringFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  sortedRowModel: createSortedRowModel(),
+  filteredRowModel: createFilteredRowModel(),
+})
+
+const columnHelper = createColumnHelper<typeof features, RecipientTableRow>()
+
 export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) {
   const [sorting, setSorting] = useState<SortingState>([])
 
-  const columns = useMemo<ColumnDef<RecipientTableRow>[]>(() => {
-    return [
-      {
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
         id: 'enabled',
         header: '',
         enableSorting: false,
@@ -67,10 +83,8 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
           )
         },
         size: 32,
-      },
-      {
-        id: 'owner',
-        accessorKey: 'owner',
+      }),
+      columnHelper.accessor('owner', {
         header: 'Propietario',
         cell: ({ row }) => {
           const r = row.original
@@ -80,10 +94,8 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
             </span>
           )
         },
-      },
-      {
-        id: 'pet',
-        accessorKey: 'pet',
+      }),
+      columnHelper.accessor('pet', {
         header: 'Mascota',
         cell: ({ row }) => {
           const r = row.original
@@ -93,10 +105,9 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
             </span>
           )
         },
-      },
-      {
+      }),
+      columnHelper.accessor('normalizedPhone', {
         id: 'phone',
-        accessorKey: 'normalizedPhone',
         header: 'Teléfono',
         enableSorting: true,
         cell: ({ row }) => {
@@ -112,36 +123,32 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
             </span>
           )
         },
-      },
-      {
-        id: 'category',
-        accessorKey: 'category',
+      }),
+      columnHelper.accessor('category', {
         header: 'Categoría',
         cell: ({ row }) => {
           const r = row.original
           return <span className="text-ink-soft">{r.category}</span>
         },
-      },
-      {
+      }),
+      columnHelper.accessor('phoneStatus', {
         id: 'status',
-        accessorKey: 'phoneStatus',
         header: 'Estado',
         cell: ({ row }) => {
           const r = row.original
           return <Chip tone={statusTone[r.phoneStatus]}>{statusLabel[r.phoneStatus]}</Chip>
         },
-      },
-    ]
-  }, [onToggle])
+      }),
+    ],
+    [onToggle],
+  )
 
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data: rows,
-    columns,
+    columns: columns as ColumnDef<typeof features, RecipientTableRow, unknown>[],
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   })
 
   if (rows.length === 0) {

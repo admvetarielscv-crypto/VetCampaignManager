@@ -1,9 +1,17 @@
 /**
- * Durable settings store. Hydrated from localStorage at app boot; every
- * mutation persists async and surfaces a toast on failure.
+ * Durable settings store. Hydrated from storage at app boot (localStorage or
+ * Supabase depending on `HAS_SUPABASE`); every mutation persists async and
+ * surfaces a toast on failure.
+ *
+ * In Supabase mode, `defaultCountryCode` is sourced from `tenantStore`
+ * (each tenant has its own country); the storage layer only holds the webhook
+ * URL + HMAC secret.
  */
 import { create } from 'zustand'
 import { toast } from 'sonner'
+import { APP } from '@/app/env'
+import { HAS_SUPABASE } from '@/integrations/supabase'
+import { useTenantStore } from '@/shared/stores/tenantStore'
 import {
   listCategories,
   saveCategory,
@@ -38,7 +46,7 @@ interface SettingsState {
     name: string
     body: string
     isDefault: boolean
-  }) => Promise<void>
+  }) => Promise<MessageTemplate>
   updateTemplate: (t: MessageTemplate) => Promise<void>
   removeTemplate: (id: string) => Promise<void>
   markDefault: (id: string) => Promise<void>
@@ -48,7 +56,7 @@ interface SettingsState {
 
 const EMPTY_SETTINGS: AppSettings = {
   webhookUrl: '',
-  defaultCountryCode: '+51',
+  defaultCountryCode: APP.defaultCountryCode,
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -63,11 +71,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch (err) {
       console.error('seed failed', err)
     }
-    const [categories, templates, settings] = await Promise.all([
+    const [categories, templates, rawSettings] = await Promise.all([
       listCategories(),
       listTemplates(),
       getSettings(),
     ])
+
+    // Merge: in Supabase mode the country comes from the current tenant; in
+    // localStorage mode it lives on the settings object directly.
+    const currentTenant = useTenantStore.getState().tenants.find(
+      (t) => t.id === useTenantStore.getState().currentTenantId,
+    )
+    const settings: AppSettings = {
+      webhookUrl: rawSettings.webhookUrl,
+      defaultCountryCode: HAS_SUPABASE
+        ? (currentTenant?.defaultCountryCode ?? APP.defaultCountryCode)
+        : (rawSettings as AppSettings).defaultCountryCode,
+      hmacSecret: rawSettings.hmacSecret,
+    }
+
     set({ categories, templates, settings, hydrated: true })
   },
 
@@ -132,6 +154,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const templates = await listTemplates()
     set({ templates })
     toast.success('Plantilla creada.')
+    return t
   },
 
   updateTemplate: async (t) => {
@@ -158,7 +181,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   updateSettings: async (partial) => {
     const next = { ...get().settings, ...partial }
-    await saveSettings(next)
+    // Persist only the fields the storage backend understands. In Supabase
+    // mode, `defaultCountryCode` belongs to the tenant, not the settings row.
+    const persisted: AppSettings = {
+      webhookUrl: next.webhookUrl,
+      defaultCountryCode: next.defaultCountryCode,
+      hmacSecret: next.hmacSecret,
+    }
+    await saveSettings(persisted)
     set({ settings: next })
     toast.success('Configuración guardada.')
   },
