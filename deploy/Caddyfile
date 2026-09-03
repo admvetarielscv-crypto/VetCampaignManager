@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Caddyfile — reverse proxy con HTTPS automático para VetCampaignManager
+# ─────────────────────────────────────────────────────────────────────────────
+# Caddy emite certificados Let's Encrypt automáticamente. Funciona con:
+#   - Dominios reales (recomendado a largo plazo, ej. n8n.tuclinica.com)
+#   - Subdominios sslip.io (gratis, ej. n8n.1.2.3.4.sslip.io)
+#   - nip.io (alternativa a sslip.io)
+#
+# Si cambiás de dominio más adelante, solo actualizá N8N_DOMAIN y EVO_DOMAIN
+# en .env y reiniciá Caddy: `docker compose restart caddy`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Sustituir las URLs de abajo con tus subdominios reales si los cambiás.
+# Por defecto se leen del .env (sintaxis {$VAR}).
+{
+    email {$LETSENCRYPT_EMAIL}
+}
+
+{$N8N_DOMAIN} {
+    reverse_proxy n8n:5678 {
+        flush_interval -1
+    }
+    encode gzip zstd
+}
+
+{$EVO_DOMAIN} {
+    reverse_proxy evolution:8080 {
+        flush_interval -1
+    }
+    encode gzip zstd
+}
+
+# Log unificado para debug.
+log {
+    level INFO
+    output file /data/access.log {
+        roll_size 10mb
+        roll_keep 5
+    }
+}
