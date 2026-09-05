@@ -107,7 +107,7 @@ export function CampaignPreview() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto animate-rise">
       {/* Top bar: back + file + new */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -199,8 +199,8 @@ export function CampaignPreview() {
         <div>
           <p className="text-xs text-ink-mute mb-2">
             Mostrando {filters.filtered.length} de {result.recipients.length}{' '}
-            destinatarios. Marca o desmarca el checkbox para incluir o excluir
-            del envío.
+            destinatarios. Marca la casilla de cada fila para decidir quién
+            recibe el mensaje.
           </p>
           <RecipientTable
             rows={filters.filtered}

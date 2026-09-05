@@ -34,9 +34,9 @@ export function TemplateMediaPicker({ media, onChange }: Props) {
         Imagen adjunta (opcional)
       </label>
       <p className="text-xs text-ink-mute mb-2">
-        Si cargas una imagen, los mensajes de esta plantilla se enviarán con la
-        foto y el texto debajo. El cliente recibe la imagen real, no un enlace.
-        JPG, PNG o WebP hasta 2 MB.
+        Si cargas una imagen, los mensajes de esta plantilla llegan con la foto
+        arriba y el texto debajo. Formatos comunes (JPG, PNG o WebP) de hasta
+        2 MB.
       </p>
 
       {media ? (

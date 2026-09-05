@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { History as HistoryIcon, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
-import { Card } from '@/shared/components/ui'
+import { Card, Table, Tbody, Td, Th, Thead, Tr } from '@/shared/components/ui'
 import { listCampaigns, type CampaignRecord } from '@/storage/exports'
 import { HAS_SUPABASE } from '@/integrations/supabase'
 
@@ -43,12 +43,12 @@ export function History() {
         </div>
         <Card className="p-6 text-center">
           <p className="text-sm text-ink-soft">
-            El historial de campañas se guarda cuando Supabase está configurado.
+            El historial guardará cada campaña que envíes: a quién, cuándo y
+            cuántos mensajes salieron.
           </p>
           <p className="text-xs text-ink-mute mt-2">
-            Define <code className="text-2xs">VITE_SUPABASE_URL</code> y{' '}
-            <code className="text-2xs">VITE_SUPABASE_ANON_KEY</code> en tu{' '}
-            <code className="text-2xs">.env</code> para habilitar esta vista.
+            Pídele al técnico de la clínica que conecte la app con la cuenta
+            central para activarlo.
           </p>
         </Card>
       </div>
@@ -67,7 +67,8 @@ export function History() {
   if (error) {
     return (
       <Card className="p-4 border-danger/30 bg-danger-soft/30 text-danger text-sm">
-        {error}
+        No se pudo cargar el historial. Revisa tu conexión e intenta de nuevo.
+        <span className="block mt-1 text-xs opacity-70">{error}</span>
       </Card>
     )
   }
@@ -89,40 +90,27 @@ export function History() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-rise">
       <div className="flex items-center gap-2">
         <HistoryIcon className="text-ink-soft" size={18} />
         <h2 className="text-md font-semibold text-ink">Historial de campañas</h2>
       </div>
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-mist-soft/40">
+        <Table>
+          <Thead className="bg-mist-soft/40">
             <tr>
-              <th className="text-left text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                Fecha
-              </th>
-              <th className="text-left text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                Estado
-              </th>
-              <th className="text-right text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                Enviados
-              </th>
-              <th className="text-right text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                Inválidos
-              </th>
-              <th className="text-right text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                Duplicados
-              </th>
-              <th className="text-left text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2">
-                ID
-              </th>
+              <Th>Fecha</Th>
+              <Th>Estado</Th>
+              <Th className="text-right">Enviados</Th>
+              <Th className="text-right">Inválidos</Th>
+              <Th className="text-right">Duplicados</Th>
             </tr>
-          </thead>
-          <tbody>
+          </Thead>
+          <Tbody>
             {records.map((r) => (
-              <tr key={r.id} className="border-t border-mist">
-                <td className="px-3 py-2 text-ink-soft">{fmtDate(r.createdAt)}</td>
-                <td className="px-3 py-2">
+              <Tr key={r.id}>
+                <Td className="text-ink-soft">{fmtDate(r.createdAt)}</Td>
+                <Td>
                   {r.status === 'sent' ? (
                     <span className="inline-flex items-center gap-1 text-vegetal">
                       <CheckCircle2 size={12} />
@@ -134,17 +122,14 @@ export function History() {
                       <span className="text-xs">Falló</span>
                     </span>
                   )}
-                </td>
-                <td className="px-3 py-2 text-right font-mono tnum text-ink">{r.enabledRecipients}</td>
-                <td className="px-3 py-2 text-right font-mono tnum text-ink-soft">{r.invalidRecipients}</td>
-                <td className="px-3 py-2 text-right font-mono tnum text-ink-soft">{r.duplicateRecipients}</td>
-                <td className="px-3 py-2 font-mono text-2xs text-ink-mute">
-                  {r.id.slice(0, 12)}…
-                </td>
-              </tr>
+                </Td>
+                <Td className="text-right font-mono tnum text-ink">{r.enabledRecipients}</Td>
+                <Td className="text-right font-mono tnum text-ink-soft">{r.invalidRecipients}</Td>
+                <Td className="text-right font-mono tnum text-ink-soft">{r.duplicateRecipients}</Td>
+              </Tr>
             ))}
-          </tbody>
-        </table>
+          </Tbody>
+        </Table>
       </Card>
     </div>
   )

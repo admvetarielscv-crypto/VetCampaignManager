@@ -58,7 +58,7 @@ export function TemplatesTab() {
             <EmptyState
               icon={<MessageSquare size={22} />}
               title="Sin plantillas"
-              description="Crea al menos una plantilla Predeterminada para empezar a enviar campañas."
+              description="Crea tu primer mensaje de campaña. Empieza con uno 'para todas las categorías' y ya puedes enviar."
             />
           </Card>
         ) : (
@@ -82,7 +82,7 @@ export function TemplatesTab() {
                     {t.isDefault && (
                       <span className="flex items-center gap-1 rounded-sm bg-clay-soft text-clay px-1.5 py-0.5 text-2xs font-medium shrink-0">
                         <Star size={10} />
-                        Default
+                        Para todos
                       </span>
                     )}
                   </div>
@@ -107,7 +107,7 @@ export function TemplatesTab() {
             <EmptyState
               icon={<MessageSquare size={22} />}
               title="Selecciona o crea una plantilla"
-              description="Las plantillas usan variables como {{owner}}, {{pet}} y {{category}}, que se reemplazan automáticamente al enviar la campaña."
+              description="Aquí escribes el mensaje que recibirán los clientes. Lo que pongas entre llaves (como {{owner}} o {{pet}}) se cambia por el nombre de cada cliente y su mascota."
             />
           </Card>
         )}

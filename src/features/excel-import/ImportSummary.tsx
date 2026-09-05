@@ -108,7 +108,7 @@ export function ImportSummary({ result, fileName, onReset }: Props) {
 
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-ink-mute">
-          Los duplicados se excluyen por defecto del envío. Puedes revisarlos
+          Los números repetidos no se enviarán dos veces. Los podrás revisar
           en el siguiente paso.
         </p>
         <Button

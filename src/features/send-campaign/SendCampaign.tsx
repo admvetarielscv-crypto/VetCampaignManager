@@ -141,12 +141,12 @@ export function SendCampaign() {
     if (res.ok) {
       setStatus('success')
       if (res.mock) {
-        toast.success('Campaña simulada (modo demo).', {
+        toast.success('Prueba completada: no se envió nada de verdad.', {
           description: res.detail,
         })
       } else {
-        toast.success('Campaña enviada al servicio de mensajería.', {
-          description: `Webhook respondió ${res.status}.`,
+        toast.success('Campaña enviada.', {
+          description: 'Los mensajes ya salieron hacia WhatsApp.',
         })
       }
     } else {
@@ -166,24 +166,24 @@ export function SendCampaign() {
   // ── Success screen ──
   if (status === 'success') {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <Card className="p-8 text-center">
-          <div className="mx-auto mb-3 rounded-md bg-vegetal-soft text-vegetal p-3 w-fit">
-            <CheckCircle2 size={28} />
+      <div className="p-6 max-w-2xl mx-auto animate-rise">
+        <Card className="p-10 text-center">
+          <div className="mx-auto mb-4 rounded-full bg-vegetal-soft text-vegetal p-4 w-fit animate-pop">
+            <CheckCircle2 size={36} />
           </div>
-          <h2 className="text-lg font-semibold text-ink">
-            Campaña enviada
+          <h2 className="text-xl font-semibold text-ink tracking-tight">
+            ¡Campaña enviada!
           </h2>
-          <p className="text-sm text-ink-soft mt-1 max-w-md mx-auto">
-            {payload?.recipients.length ?? 0} mensaje(s) fueron enviados al
-            servicio de mensajería. Los destinatarios los recibirán a través de
-            WhatsApp en los próximos minutos.
+          <p className="text-sm text-ink-soft mt-2 max-w-md mx-auto leading-relaxed">
+            Los{' '}
+            {payload?.recipients.length ?? 0} mensajes ya están en camino. Cada
+            cliente los recibirá por WhatsApp en los próximos minutos.
           </p>
-          <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+          <div className="mt-6 grid grid-cols-2 gap-3 text-sm max-w-sm mx-auto">
             <Stat size="sm" label="Destinatarios" value={payload?.recipients.length ?? 0} />
-            <Stat size="sm" label="Campaña ID" value={(payload?.campaign.id ?? '').slice(0, 8)} mono />
+            <Stat size="sm" label="Archivo" value={fileName || '—'} />
           </div>
-          <div className="mt-6 flex items-center justify-center gap-2">
+          <div className="mt-8 flex items-center justify-center gap-2">
             <Button variant="secondary" size="md" onClick={() => navigate('/campaign/preview')}>
               <ArrowLeft size={14} />
               Volver a la revisión
@@ -199,7 +199,7 @@ export function SendCampaign() {
 
   // ── Confirm / dispatch screen ──
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-3xl mx-auto animate-rise">
       <div className="flex items-center justify-between gap-3 mb-4">
         <Button variant="ghost" size="sm" onClick={handleBack}>
           <ArrowLeft size={14} />
@@ -228,9 +228,9 @@ export function SendCampaign() {
           Confirmar envío
         </h2>
         <p className="text-sm text-ink-soft mt-1">
-          Al confirmar, se hará un <strong>único POST</strong> al webhook de n8n
-          con los mensajes ya renderizados. n8n los enviará por WhatsApp vía
-          Evolution API.
+          Al confirmar, cada cliente recibirá su mensaje por WhatsApp. El
+          envío es en segundo plano: puedes cerrar esta pantalla cuando veas
+          la confirmación.
         </p>
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -258,7 +258,7 @@ export function SendCampaign() {
           <Stat
             size="sm"
             label="Modo"
-            value={settings.webhookUrl ? 'Real' : 'Demo'}
+            value={settings.webhookUrl ? 'Envío real' : 'Solo prueba'}
             tone={settings.webhookUrl ? 'vegetal' : 'warn'}
           />
         </div>
@@ -289,7 +289,7 @@ export function SendCampaign() {
             <>
               <span className="h-2 w-2 rounded-full bg-vegetal shrink-0" />
               <span className="text-ink-soft">
-                Webhook configurado:{' '}
+                Conexión lista:{' '}
                 <span className="font-mono">{maskUrl(settings.webhookUrl)}</span>
               </span>
             </>
@@ -297,8 +297,8 @@ export function SendCampaign() {
             <>
               <span className="h-2 w-2 rounded-full bg-warn shrink-0" />
               <span className="text-ink-soft">
-                Webhook vacío — modo demo. No se hará una petición real.
-                Configúralo en Ajustes → Webhook.
+                Sin conexión de envío — modo prueba: no se enviará nada de
+                verdad. Conéctalo en Ajustes → Conexión.
               </span>
             </>
           )}
@@ -357,8 +357,8 @@ export function SendCampaign() {
         <p className="text-sm text-ink">
           Revisa que los destinatarios sean correctos.{' '}
           {settings.webhookUrl
-            ? 'El webhook recibirá el payload completo ahora.'
-            : 'Estás en modo demo: no se hará una petición real.'}
+            ? 'Los mensajes saldrán ahora mismo.'
+            : 'Estás en modo prueba: no se enviará nada de verdad.'}
         </p>
       </Modal>
 </div>

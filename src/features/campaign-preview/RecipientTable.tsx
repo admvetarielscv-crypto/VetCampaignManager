@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table'
 import { ArrowUpDown, Inbox } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { Chip } from '@/shared/components/ui'
+import { Chip, Table, Tbody, Td, Th, Thead, Tr } from '@/shared/components/ui'
 import type { Recipient } from '@/lib/types'
 
 export interface RecipientTableRow extends Recipient {
@@ -165,15 +165,14 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
   return (
     <div className="rounded-md border border-mist bg-paper overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-mist-soft/40">
+        <Table>
+          <Thead className="bg-mist-soft/40">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
-                  <th
+                  <Th
                     key={h.id}
                     style={{ width: h.getSize() !== 150 ? h.getSize() : undefined }}
-                    className="text-left text-2xs font-semibold uppercase tracking-wide text-ink-mute px-3 py-2"
                   >
                     {h.isPlaceholder ? null : h.column.getCanSort() ? (
                       <button
@@ -189,35 +188,35 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
                     ) : (
                       flexRender(h.column.columnDef.header, h.getContext())
                     )}
-                  </th>
+                  </Th>
                 ))}
               </tr>
             ))}
-          </thead>
-          <tbody>
+          </Thead>
+          <Tbody>
             {table.getRowModel().rows.map((row) => {
               const r = row.original
               const active = r.id === selectedId
               return (
-                <tr
+                <Tr
                   key={r.id}
                   onClick={() => onSelect(r.id)}
                   className={cn(
-                    'border-t border-mist cursor-pointer transition-colors',
+                    'cursor-pointer transition-colors',
                     active ? 'bg-vegetal-soft/30' : 'hover:bg-mist-soft/30',
                     !r.enabled && 'opacity-50',
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2 align-middle">
+                    <Td key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                    </Td>
                   ))}
-                </tr>
+                </Tr>
               )
             })}
-          </tbody>
-        </table>
+          </Tbody>
+        </Table>
       </div>
     </div>
   )

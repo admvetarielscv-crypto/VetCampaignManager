@@ -28,17 +28,17 @@ export function WebhookTab() {
             <Webhook size={16} />
           </span>
           <h3 className="text-md font-semibold text-ink">
-            Webhook de envío n8n
+            Conexión de envío
           </h3>
         </div>
         <p className="text-sm text-ink-soft mb-4">
-          Al enviar una campaña, VetCampaignManager hace un POST hacia esta URL
-          con la lista de destinatarios y sus mensajes ya renderizados. n8n
-          luego los reenvía por WhatsApp vía Evolution API.
+          Este enlace conecta la app con tu WhatsApp: cuando envías una
+          campaña, los mensajes salen por aquí. Pégalo una vez y queda
+          guardado. Si no lo tienes, pídeselo a quien instaló el sistema.
         </p>
 
         <label className="text-sm text-ink-soft block mb-1.5">
-          URL del webhook
+          Enlace de conexión
         </label>
         <div className="flex gap-2">
           <Input
@@ -59,20 +59,20 @@ export function WebhookTab() {
         </div>
         {!webhookUrl && (
           <p className="text-xs text-ink-mute mt-1.5">
-            Vacío = modo demo. Verás el payload que se enviaría sin hacer la
-            petición real (útil para pruebas).
+            Si lo dejas vacío, la app queda en modo prueba: verás cómo sería
+            el envío pero no se mandará nada de verdad.
           </p>
         )}
       </Card>
 
       <Card className="p-5">
         <h3 className="text-md font-semibold text-ink mb-1">
-          País por defecto
+          País de los teléfonos
         </h3>
         <p className="text-sm text-ink-soft mb-4">
-          VetCampaignManager normaliza los teléfonos asumiendo móviles peruanos
-          de 9 dígitos empezando por 9 (prefijo +51). Esta configuración se
-          conserva para futuras clínicas internacionales.
+          Los números del Excel se leen como celulares de Perú: 9 dígitos que
+          empiezan con 9. Los números fijos o incompletos se marcan como
+          inválidos y no se les envía.
         </p>
         <Input
           value={settings.defaultCountryCode}

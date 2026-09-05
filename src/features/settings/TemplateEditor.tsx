@@ -6,6 +6,7 @@ import {
   Input,
   MessagePreview,
   Select,
+  Textarea,
 } from '@/shared/components/ui'
 import { VARIABLES, DEMO_CONTEXT, renderTemplate } from '@/lib/template'
 import { CAPTION_WARN_CHARS } from '@/lib/image'
@@ -81,8 +82,8 @@ export function TemplateEditor({ template, onDelete }: Props) {
         err instanceof Error && err.name === 'QuotaExceededError'
       toast.error(
         quota
-          ? 'No hay espacio suficiente para guardar la imagen. Quita imágenes de otras plantillas o usa una más liviana.'
-          : 'No se pudo guardar la plantilla. Intenta de nuevo.',
+          ? 'La imagen pesa demasiado para guardarla aquí. Prueba con una más pequeña o quítala de otra plantilla.'
+          : 'No se pudo guardar. Vuelve a intentar.',
       )
     }
   }
@@ -132,7 +133,7 @@ export function TemplateEditor({ template, onDelete }: Props) {
               if (v === '') setIsDefault(true)
             }}
           >
-            <option value="">Predeterminada (fallback)</option>
+            <option value="">Para todas las categorías</option>
             {availableCategories.map((c) => (
               <option
                 key={c.id}
@@ -140,7 +141,7 @@ export function TemplateEditor({ template, onDelete }: Props) {
                 disabled={boundCategoryIds.has(c.id)}
               >
                 {c.name}
-                {boundCategoryIds.has(c.id) ? ' (en uso)' : ''}
+                {boundCategoryIds.has(c.id) ? ' (ya tiene plantilla)' : ''}
               </option>
             ))}
           </Select>
@@ -155,14 +156,14 @@ export function TemplateEditor({ template, onDelete }: Props) {
             onChange={(e) => setIsDefault(e.target.checked)}
             className="accent-vegetal"
           />
-          Marcar también como plantilla predeterminada (fallback global)
+          Marcar también como el mensaje para todas las categorías
         </label>
       )}
 
       {categoryId === null && (
         <p className="text-xs text-ink-mute">
-          Esta es la plantilla <strong>Predeterminada</strong> (se usa cuando una
-          categoría no tiene plantilla propia).
+          Este mensaje lo reciben todos los clientes cuya categoría no tenga
+          un mensaje propio.
         </p>
       )}
 
@@ -170,8 +171,8 @@ export function TemplateEditor({ template, onDelete }: Props) {
         <div className="flex items-start gap-2 rounded-sm bg-warn-soft/50 border border-warn/20 p-2.5 text-xs text-warn">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
-            Al marcarla como Predeterminada, la anterior Predeterminada perderá
-            esa marca (solo puede haber una).
+            Solo puede existir un mensaje "para todas las categorías". Si
+            marcas este, el anterior dejará de serlo.
           </span>
         </div>
       )}
@@ -179,7 +180,7 @@ export function TemplateEditor({ template, onDelete }: Props) {
       {/* Variable chips */}
       <div>
         <label className="text-sm text-ink-soft block mb-1.5">
-          Variables
+          Datos que puedes usar en el mensaje
         </label>
         <div className="flex flex-wrap gap-2">
           {VARIABLES.map((v) => (
@@ -203,18 +204,18 @@ export function TemplateEditor({ template, onDelete }: Props) {
           <label className="text-sm text-ink-soft block mb-1.5">
             Mensaje
           </label>
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={body}
             onChange={onChangeBody}
             rows={12}
-            className="w-full rounded-sm bg-paper border border-mist px-3 py-2 text-sm placeholder:text-ink-mute outline-none focus:border-vegetal transition-colors resize-y leading-relaxed"
+            className="leading-relaxed"
             placeholder={EMPTY_BODY}
           />
           {unknownVars.length > 0 && (
             <div className="flex items-center gap-2 mt-2 text-xs text-danger">
               <AlertTriangle size={12} />
-              Variable(s) desconocida(s):{' '}
+              Estos códigos no se van a reemplazar, revísalos:{' '}
               <code className="font-mono">
                 {unknownVars.map((v) => `{{${v}}}`).join(', ')}
               </code>
@@ -236,8 +237,8 @@ export function TemplateEditor({ template, onDelete }: Props) {
         <div className="flex items-start gap-2 rounded-sm bg-warn-soft/50 border border-warn/20 p-2.5 text-xs text-warn">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
-            WhatsApp limita el texto de un mensaje con imagen a ~1024
-            caracteres. Acorta el mensaje para que no se corte.
+            WhatsApp corta los mensajes largos cuando llevan imagen. Si el
+            mensaje pasa de ~1024 caracteres, acórtalo para que no se corte.
           </span>
         </div>
       )}

@@ -57,7 +57,7 @@ export function ExcelImport() {
 
   // Default: dropzone.
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-2xl mx-auto animate-rise">
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-ink">
           Importar archivo Excel
@@ -69,21 +69,6 @@ export function ExcelImport() {
       </div>
 
       <ImportDropzone importState={importState} />
-
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-ink-mute">
-        <div className="rounded-sm bg-mist-soft/50 p-3">
-          <p className="font-medium text-ink-soft mb-1">1. Exporta</p>
-          En VetPraxis, genera el reporte de eventos pendientes en formato Excel.
-        </div>
-        <div className="rounded-sm bg-mist-soft/50 p-3">
-          <p className="font-medium text-ink-soft mb-1">2. Importa</p>
-          Arrastra el archivo aquí. Validaremos teléfonos y categorías.
-        </div>
-        <div className="rounded-sm bg-mist-soft/50 p-3">
-          <p className="font-medium text-ink-soft mb-1">3. Revisa y envía</p>
-          Previsualiza los mensajes y dispara la campaña a WhatsApp.
-        </div>
-      </div>
     </div>
   )
 }
