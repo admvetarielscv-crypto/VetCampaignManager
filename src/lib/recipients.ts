@@ -47,7 +47,7 @@ export function validateRecipients(input: ValidationInput): ImportResult {
       if (!row.rawPhone.trim()) {
         issue = 'Teléfono vacío'
       } else {
-        issue = 'Teléfono no válido (requiere móvil peruano de 9 dígitos)'
+        issue = 'Teléfono no válido (se necesita un celular de 9 dígitos que empiece con 9)'
       }
       phoneStatus = 'invalid'
     } else if (seen.has(normalized)) {

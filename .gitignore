@@ -26,6 +26,12 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!deploy/.env.example
+
+# Local-only pilot guide & stack (PC-as-server; not published to GitHub)
+deploy/docker-compose.pc.yml
+deploy/.env.pc*
+docs/GUIA-SERVIDOR-LOCAL.md
 
 # Vite
 .vite
