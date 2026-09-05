@@ -19,13 +19,10 @@ export function Login() {
       <div className="flex h-screen items-center justify-center bg-cream">
         <Card className="p-6 max-w-md text-center space-y-3">
           <PawPrint className="mx-auto text-vegetal" size={32} />
-          <h2 className="text-md font-semibold text-ink">Modo local activo</h2>
+          <h2 className="text-md font-semibold text-ink">Todo listo para usar</h2>
           <p className="text-sm text-ink-soft">
-            No hay Supabase configurado. La app funciona con localStorage del navegador.
-            Para habilitar login y multi-tenant, define{' '}
-            <code className="text-xs">VITE_SUPABASE_URL</code> y{' '}
-            <code className="text-xs">VITE_SUPABASE_ANON_KEY</code> en tu{' '}
-            <code className="text-xs">.env</code>.
+            Estás usando la app en modo sencillo: no necesitas cuenta ni
+            contraseña. Tus datos quedan guardados en esta computadora.
           </p>
         </Card>
       </div>

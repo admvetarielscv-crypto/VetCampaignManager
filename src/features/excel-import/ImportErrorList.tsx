@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { Chip } from '@/shared/components/ui'
+import { Chip, Table, Tbody, Td, Th, Thead, Tr } from '@/shared/components/ui'
 import type { ImportResult } from '@/lib/types'
 
 interface Props {
@@ -46,36 +46,33 @@ export function ImportErrorList({ result }: Props) {
 
       {open && (
         <div className="border-t border-mist overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-mist-soft/40">
-              <tr className="text-left text-2xs uppercase tracking-wide text-ink-mute">
-                <th className="px-3 py-2 font-semibold w-16">Fila</th>
-                <th className="px-3 py-2 font-semibold">Propietario</th>
-                <th className="px-3 py-2 font-semibold">Mascota</th>
-                <th className="px-3 py-2 font-semibold">Teléfono</th>
-                <th className="px-3 py-2 font-semibold">Motivo</th>
+          <Table>
+            <Thead className="bg-mist-soft/40">
+              <tr>
+                <Th className="w-16">Fila</Th>
+                <Th>Propietario</Th>
+                <Th>Mascota</Th>
+                <Th>Teléfono</Th>
+                <Th>Motivo</Th>
               </tr>
-            </thead>
-            <tbody>
+            </Thead>
+            <Tbody>
               {problematic.map((r) => (
-                <tr
+                <Tr
                   key={r.id}
-                  className={cn(
-                    'border-t border-mist',
-                    r.phoneStatus === 'invalid' && 'bg-danger-soft/30',
-                  )}
+                  className={cn(r.phoneStatus === 'invalid' && 'bg-danger-soft/30')}
                 >
-                  <td className="px-3 py-2 text-ink-mute">{r.rowNumber}</td>
-                  <td className="px-3 py-2">{r.owner || '—'}</td>
-                  <td className="px-3 py-2">{r.pet || '—'}</td>
-                  <td className="px-3 py-2 text-ink-mute" style={{ fontFamily: 'var(--font-mono)' }}>
+                  <Td className="text-ink-mute tnum">{r.rowNumber}</Td>
+                  <Td>{r.owner || '—'}</Td>
+                  <Td>{r.pet || '—'}</Td>
+                  <Td className="text-ink-mute" style={{ fontFamily: 'var(--font-mono)' }}>
                     {r.rawPhone || '—'}
-                  </td>
-                  <td className="px-3 py-2 text-ink-soft">{r.issue}</td>
-                </tr>
+                  </Td>
+                  <Td className="text-ink-soft">{r.issue}</Td>
+                </Tr>
               ))}
-            </tbody>
-          </table>
+            </Tbody>
+          </Table>
         </div>
       )}
     </div>

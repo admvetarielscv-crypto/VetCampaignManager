@@ -98,9 +98,15 @@ export function normalizePhone(
     return { normalized: '', valid: false }
   }
 
-  const parts = raw.split(' - ')
+  // ' - ' keeps the VetPraxis multi-number format ("+51 - 985963259(DUEÑA) -
+  // 977324052"); /,;| also act as separators in some exports. A dash without
+  // surrounding spaces stays inside the fragment ("987-654-321" is one number).
+  const parts = raw.split(/\s-\s|\s*[/,;|]\s*/)
   for (const part of parts) {
-    const cleaned = stripAnnotations(part).replace(/[\s.-]/g, '')
+    // Keep only digits and a leading '+': drops trailing/loose junk like
+    // "917104426 /", "987654321*", "987654321%". Parenthetical annotations
+    // are stripped first so "(DUEÑA)" never contributes digits.
+    const cleaned = stripAnnotations(part).replace(/[^+\d]/g, '')
     if (!cleaned) continue
     const digits = stripCountryPrefix(cleaned, countryCode)
     if (!digits) continue

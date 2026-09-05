@@ -21,13 +21,13 @@ export function Stepper({ steps, currentIndex, className }: StepperProps) {
           <div key={step.id} className="flex items-center">
             <div className="flex items-center gap-2">
               <span
-                className={cn(
-                  'flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium',
-                  state === 'done' && 'bg-vegetal text-paper',
-                  state === 'current' &&
-                    'bg-vegetal-soft text-vegetal border border-vegetal/30',
-                  state === 'todo' && 'bg-mist-soft text-ink-mute border border-mist',
-                )}
+                  className={cn(
+                    'flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium transition-colors',
+                    state === 'done' && 'bg-vegetal text-paper',
+                    state === 'current' &&
+                      'bg-vegetal-soft text-vegetal border border-vegetal/30',
+                    state === 'todo' && 'bg-mist-soft text-ink-mute border border-mist',
+                  )}
                 aria-current={state === 'current' ? 'step' : undefined}
               >
                 {i + 1}
@@ -44,7 +44,7 @@ export function Stepper({ steps, currentIndex, className }: StepperProps) {
             {i < steps.length - 1 && (
               <span
                 className={cn(
-                  'mx-3 h-px w-8',
+                  'mx-3 h-px w-8 transition-colors',
                   i < currentIndex ? 'bg-vegetal' : 'bg-mist',
                 )}
               />

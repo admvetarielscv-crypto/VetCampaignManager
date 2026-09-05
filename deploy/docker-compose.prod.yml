@@ -1,0 +1,117 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VetCampaignManager — stack de producción para distribución multi-sede
+# ─────────────────────────────────────────────────────────────────────────────
+# Arquitectura:
+#   Caddy (HTTPS) ── reverse proxy ──┬── n8n             (workflows de envío)
+#                                    ├── Evolution API    (puente WhatsApp)
+#                                    └── Postgres         (DB de Evolution)
+#
+# Todos los servicios están en la red `vcm-net`. Solo Caddy expone puertos
+# al público (80/443). n8n y Evolution son inalcanzables directamente desde
+# internet, solo a través de sus subdominios HTTPS.
+#
+# Variables de entorno requeridas en .env (ver deploy/.env.example):
+#   - VPS_IP          IP pública del VPS (se usa para sslip.io si no tenés dominio)
+#   - N8N_DOMAIN      Subdominio para n8n (ej. n8n.1.2.3.4.sslip.io)
+#   - EVO_DOMAIN      Subdominio para Evolution (ej. evo.1.2.3.4.sslip.io)
+#   - N8N_USER / N8N_PASSWORD  Credenciales básicas para el panel de n8n
+#   - EVO_API_KEY     API key global de Evolution (cualquier string fuerte)
+#   - POSTGRES_PASSWORD         Password de la DB de Evolution
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: vcm
+
+services:
+  # ── Reverse proxy con HTTPS automático (Let's Encrypt vía sslip.io o dominio) ─
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - vcm-net
+    depends_on:
+      - n8n
+      - evolution
+
+  # ── n8n: automatización del envío ──────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=${N8N_DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_DOMAIN}/
+      - GENERIC_TIMEZONE=America/Lima
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      # Si más adelante querés escalar, cambiá DB_SQLITE por Postgres.
+      - DB_SQLITE_VACUUM_ON_STARTUP=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - vcm-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ── Evolution API: puente a WhatsApp ────────────────────────────────────────
+  evolution:
+    image: atendai/evolution-api:v2.3.0
+    restart: unless-stopped
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/evolution
+      - AUTHENTICATION_API_KEY=${EVO_API_KEY}
+      - STORE_MESSAGES=true
+      - STORE_MESSAGE_UP=true
+      - CLEAN_STORE_CLEANUP_INTERVAL=1800
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - vcm-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Postgres (DB de Evolution) ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=evolution
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vcm-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d evolution"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  caddy_data:
+  caddy_config:
+  n8n_data:
+  evolution_instances:
+  postgres_data:
+
+networks:
+  vcm-net:
+    driver: bridge

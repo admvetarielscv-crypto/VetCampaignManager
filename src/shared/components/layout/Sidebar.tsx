@@ -50,7 +50,9 @@ export function Sidebar() {
 
       <div className="px-4 py-3 border-t border-mist">
         <p className="text-2xs text-ink-mute leading-tight">
-          MVP · datos locales en este navegador
+          {HAS_SUPABASE
+            ? 'Conectado a la cuenta de la clínica'
+            : 'Tus datos quedan guardados en esta computadora'}
         </p>
       </div>
     </aside>

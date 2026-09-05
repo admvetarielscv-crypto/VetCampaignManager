@@ -16,6 +16,13 @@ describe('normalizePhone', () => {
       '+51 - 448877665(FIJO) - 990011223',
       { normalized: '+51990011223', valid: true },
     ],
+    ['917104426 /', { normalized: '+51917104426', valid: true }],
+    ['987654321*', { normalized: '+51987654321', valid: true }],
+    ['987654321 %', { normalized: '+51987654321', valid: true }],
+    ['977324052 / 912345678', { normalized: '+51977324052', valid: true }],
+    ['987654321, 912345678; 911222333', { normalized: '+51987654321', valid: true }],
+    ['987-654-321', { normalized: '+51987654321', valid: true }],
+    ['987654321 /', { normalized: '+51987654321', valid: true }],
   ])('normalizePhone(%j) -> %j', (input, expected) => {
     expect(normalizePhone(input)).toEqual(expected)
   })

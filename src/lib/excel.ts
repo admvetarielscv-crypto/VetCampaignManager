@@ -58,11 +58,16 @@ function pickColumnIndex(
 }
 
 /**
- * Trim a trailing '#' artifact from pet names. VetPraxis appends '#'
- * (with or without a preceding space) to some names, e.g. "MAXI #" / "DOKY#".
+ * Clean a pet name from VetPraxis artifacts:
+ *   - Parenthetical notes anywhere ("ROCO (muerde)" -> "ROCO"), including
+ *     unclosed ones cut to the end ("ROCO (muerde" -> "ROCO").
+ *   - Trailing loose symbols ("MAXI #", "DOKY#", "FIRULAIS*") -> trimmed.
+ * Exported for tests; a pure string helper.
  */
-function cleanPetName(raw: string): string {
-  return raw.replace(/#\s*$/, '').trim()
+export function cleanPetName(raw: string): string {
+  let name = raw.replace(/\([^)]*\)/g, '')
+  name = name.replace(/\([^)]*$/, '')
+  return name.replace(/[\s#*%.,:;/-]+$/, '').trim()
 }
 
 export async function parseWorkbook(
@@ -132,7 +137,7 @@ export async function parseWorkbook(
       const label = headers.join(', ') || '(sin encabezados)'
       errors.push({
         field: key,
-        message: `No se encontró la columna "${key}". Encabezados detectados: ${label}`,
+        message: `El archivo no tiene la columna "${key}". Revisa que sea el reporte exportado de VetPraxis (columnas detectadas: ${label}).`,
       })
     }
   }

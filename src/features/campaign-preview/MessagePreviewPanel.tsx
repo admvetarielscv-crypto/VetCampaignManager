@@ -106,8 +106,8 @@ export function MessagePreviewPanel({ recipient, onClose }: Props) {
           <div className="flex items-start gap-2 text-sm text-warn">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span>
-              No hay plantilla Predeterminada ni asociada a esta categoría. Crea
-              una en <strong>Ajustes → Plantillas</strong> antes de enviar.
+              Esta categoría no tiene mensaje todavía. Crea uno en{' '}
+              <strong>Ajustes → Plantillas</strong> antes de enviar.
             </span>
           </div>
         )}
@@ -127,7 +127,7 @@ export function MessagePreviewPanel({ recipient, onClose }: Props) {
         {msg.unknown.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-danger">
             <AlertTriangle size={12} />
-            Variable(s) desconocida(s):
+            Estos códigos del mensaje no se reconocen:
             <code className="font-mono">
               {msg.unknown.map((v) => `{{${v}}}`).join(', ')}
             </code>
@@ -137,7 +137,7 @@ export function MessagePreviewPanel({ recipient, onClose }: Props) {
         {msg.empty.length > 0 && msg.text && (
           <div className="flex items-center gap-2 text-xs text-warn">
             <AlertTriangle size={12} />
-            Dato(s) vacío(s) en el destinatario:
+            A este cliente le falta:{' '}
             {msg.empty.map((v) => `{{${v}}}`).join(', ')}
           </div>
         )}

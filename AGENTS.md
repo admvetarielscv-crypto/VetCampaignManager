@@ -109,25 +109,53 @@ src/
   app/         env (static fallbacks), runtime (validated env), providers, routes
   lib/         pure helpers (excel, phone, template, campaign, id, cn)
   storage/     localStorage-backed async functions + keyed JSON envelopes
-  integrations/n8n.ts   webhook client
-  features/    one folder per feature (home, excel-import, campaign-preview,
-               send-campaign, settings) — each lazy-loaded
-  shared/      ui/ primitives, layout/ (AppShell, Sidebar, TopBar), hooks/
+  integrations/   n8n webhook client + Supabase client (optional SaaS mode)
+  features/    one folder per feature (auth, home, excel-import,
+               campaign-preview, send-campaign, settings, history) — each lazy-loaded
+  shared/      ui/ primitives, layout/ (AppShell, Sidebar, TopBar), hooks/, stores/
   styles/      tailwind.css (tokens)
+supabase/      SQL migrations + README for SaaS mode (optional, not used by MVP)
 vendor/        vendored xlsx tarball (supply-chain safety)
+docs/          GUIA-SEDES.md — Spanish deployment guide for multi-site
+deploy/        docker-compose.prod.yml + Caddyfile for the VPS backend stack
 .github/workflows/   CI pipeline
-Dockerfile    multi-stage build → nginx static serve
-docker-compose.yml   frontend + (optional) n8n + Evolution orchestration
+Dockerfile     multi-stage build → nginx static serve (single-container option)
+docker-compose.yml   frontend + (optional) n8n for local all-in-one development
+vercel.json    Vercel deployment config (SPA rewrites + asset caching)
 ```
 
 ## Deployment
-- **Docker** (recommended): `docker build -t vetcampaign .` then `docker run -p 8080:80 vetcampaign`.
-  Serves the static build via nginx (SPA fallback configured).
-- **Manual**: `npm run build` and serve `dist/` from any static host
-  (Vercel, Netlify, nginx, Caddy). Ensure SPA fallback to `index.html`.
-- The n8n + Evolution API stack runs separately (the clinic's own Docker
-  compose). `docker-compose.yml` at repo root references it optionally for
-  local all-in-one development.
+
+This project is **frontend-only** — everything ships as a static SPA. The only
+runtime dependencies are `n8n` + `Evolution API` for WhatsApp delivery, which
+run separately (in Docker).
+
+### Distribution model — single-clinic, multiple branches (sedes)
+
+Current setup uses 3 deployments:
+
+1. **Frontend** (static SPA) → deploy to Vercel/Netlify/Cloudflare Pages.
+   - `vercel.json` configures SPA rewrites + asset caching.
+   - Each `git push` to the default branch triggers an auto-deploy.
+2. **Backend stack** (n8n + Evolution API + Postgres + Caddy) → one VPS per
+   clinic (or shared VPS for multi-tenant SaaS in the future).
+   - `deploy/docker-compose.prod.yml` runs the full stack in Docker.
+   - `deploy/Caddyfile` provides automatic HTTPS via Let's Encrypt (works
+     with real domains or free sslip.io subdomains).
+3. **Recepcionistas** (end users) → open the frontend link in any modern
+   browser, paste their webhook URL in Settings, start sending campaigns.
+
+See `docs/GUIA-SEDES.md` for the full step-by-step (in Spanish) covering
+VPS purchase, Evolution instance creation per sede, n8n workflow setup,
+Vercel deploy, and per-receptionist onboarding.
+
+### Alternative deployments (not recommended for 3-sede distribution)
+
+- **Single Docker container** (`docker build -t vetcampaign .`): useful for
+  self-hosting in a LAN, but doesn't work for distributed multi-site
+  access — the frontend would only be reachable inside the LAN.
+- **Static-only** (`npm run build` → `dist/`): serve from any static
+  host with SPA fallback to `index.html`.
 
 ## Phase status (MVP features)
 - [x] Phase 0 — Foundations (scaffold, tokens, UI kit, shell, placeholder pages)
@@ -135,7 +163,9 @@ docker-compose.yml   frontend + (optional) n8n + Evolution orchestration
 - [x] Phase 2 — Settings: Categories & Templates (+ seed defaults, webhook tab)
 - [x] Phase 3 — Campaign Preview & Message Preview
 - [x] Phase 4 — Send Campaign & n8n (payload, mock client, dispatch UI)
-- [ ] Phase 5 — Polish (empty/error states, keyboard, focus, reduced-motion, mobile)
+- [x] Phase 5 — Distribution: VPS backend stack (n8n + Evolution + Caddy),
+      `vercel.json`, `docs/GUIA-SEDES.md` for multi-sede rollout.
+- [ ] Phase 6 — Polish (empty/error states, keyboard, focus, reduced-motion, mobile)
 
 ## Professionalization roadmap (SaaS readiness)
 - [x] P0 — Bug fixes: phone.ts casing typo, brand name centralized in `APP`,
@@ -150,7 +180,11 @@ docker-compose.yml   frontend + (optional) n8n + Evolution orchestration
       clinic_settings, campaigns, audit_log), Supabase Auth + Login page +
       RequireAuth route guard, tenant store, storage seam with Supabase
       backend, audit log writes, History UI.
-- [ ] P3 — i18n (message catalog) + phone rules per country (when expanding).
+- [x] P3 — Multi-sede deployment (active, MVP-only config): VPS backend stack
+      (deploy/docker-compose.prod.yml + Caddyfile), Vercel config (vercel.json),
+      full Spanish deployment guide (docs/GUIA-SEDES.md). Supabase stays as
+      optional future activation when external clinics join.
+- [ ] P4 — i18n (message catalog) + phone rules per country (when expanding).
 - [ ] P4 — Audit log, send idempotency, HMAC payload signing, error tracking.
 - [ ] P5 — UX/a11y polish (focus trap, ARIA tabs/sort, mobile drawer, fonts,
       dark mode, microinteractions).

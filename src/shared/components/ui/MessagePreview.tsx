@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { CheckCheck } from 'lucide-react'
 
 /**
  * WhatsApp-style message bubble. Reused by the template editor (synthetic
@@ -37,9 +38,12 @@ export function MessagePreview({
           <span className="h-7 w-7 rounded-full bg-vegetal text-paper flex items-center justify-center text-xs font-medium">
             {recipientName?.[0]?.toUpperCase() || '?'}
           </span>
-          <span className="text-sm font-medium text-ink truncate">
-            {recipientName || 'Destinatario'}
-          </span>
+          <div className="min-w-0 leading-tight">
+            <p className="text-sm font-medium text-ink truncate">
+              {recipientName || 'Destinatario'}
+            </p>
+            <p className="text-2xs text-ink-mute">en línea</p>
+          </div>
         </div>
         {/* Bubble */}
         <div className="p-3 bg-mist-soft/30 min-h-[6rem]">
@@ -56,6 +60,15 @@ export function MessagePreview({
                 (El mensaje aparecerá aquí)
               </span>
             )}
+            <span className="flex items-center justify-end gap-1 mt-1 text-[10px] text-ink-mute">
+              <span className="tnum">
+                {new Date().toLocaleTimeString('es-PE', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              <CheckCheck size={12} className="text-sky-500" />
+            </span>
           </div>
         </div>
       </div>
