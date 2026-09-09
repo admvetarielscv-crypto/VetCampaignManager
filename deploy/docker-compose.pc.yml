@@ -1,0 +1,118 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VetCampaignManager — stack "PC servidor" (piloto sin VPS)
+# ─────────────────────────────────────────────────────────────────────────────
+# Variante del stack de producción (docker-compose.prod.yml) para correr el
+# backend en una PC de la clínica encendida 24/7, sin Caddy. La puerta de
+# entrada pública la abre Tailscale Funnel (corre en Windows) y apunta a los
+# puertos que este stack publica SOLO en 127.0.0.1:
+#
+#   https://TU_HOSTNAME.ts.net/       (443)  → 127.0.0.1:5679  → n8n
+#   https://TU_HOSTNAME.ts.net:8443/  (8443) → 127.0.0.1:8081  → Evolution
+#
+# Comandos del funnel (se persisten, no hace falta re-ejecutar tras reinicios):
+#   tailscale funnel --bg 443:http://127.0.0.1:5679
+#   tailscale funnel --bg 8443:http://127.0.0.1:8081
+#
+# Variables requeridas en .env.pc (ver deploy/.env.pc.example):
+#   - TS_HOSTNAME       Hostname Tailscale (ej. mi-pc.mi-tailnet.ts.net)
+#   - N8N_USER / N8N_PASSWORD     Credenciales del panel de n8n
+#   - EVO_API_KEY       API key global de Evolution
+#   - POSTGRES_PASSWORD Contraseña de la DB compartida Evolution + n8n
+#
+# ⚠️ Editar este archivo NO cambia los contenedores que ya corren:
+#    `restart: always` re-enciende con la config vieja. Para aplicar cambios:
+#      docker compose -f docker-compose.pc.yml --env-file .env.pc up -d --force-recreate
+#
+# ⚠️ Versiones FIJADAS a propósito:
+#    - evolution-api v2.3.7: la v2.4+ exige activar licencia contra el
+#      servidor de Evolution Foundation; un `pull` con `:latest` podría
+#      romper el stack. Actualizar solo de forma deliberada.
+#    - n8n 2.38.5: misma razón — upgrades deliberados, no accidentales.
+#
+# ⚠️ Deuda conocida (ver docs/GUIA-SERVIDOR-LOCAL.md): n8n comparte la MISMA
+#    base Postgres que Evolution (`evolution`). Funciona, pero a futuro
+#    conviene darle a n8n su propia DB (o volver a su SQLite) para evitar
+#    choques de migraciones entre los dos sistemas.
+#
+# Migración futura a VPS: usar docker-compose.prod.yml (Caddy + dominio) y
+# cada sede actualiza su URL de webhook en Ajustes. Ver docs/GUIA-SERVIDOR-LOCAL.md
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── Postgres (DB compartida: Evolution + n8n) ───────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: vcm_db_evolution
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: evolution
+    volumes:
+      - vcm_db_storage:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Evolution API: puente a WhatsApp (una instancia por sede dentro del API) ─
+  evolution_api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: vcm_evolution_api
+    restart: always
+    ports:
+      # Solo localhost: Tailscale Funnel (en el host) es la única entrada.
+      - "127.0.0.1:8081:8080"
+    environment:
+      # SERVER_URL debe ser una URL válida; si TS_HOSTNAME no está definida,
+      # queda `https://:8443` (inválida) y Evolution rechaza TODAS las rutas
+      # con `{"code":"1-11","msg":"Invalid url."}`. Verificar con:
+      #   docker exec vcm_evolution_api printenv SERVER_URL
+      - SERVER_URL=https://${TS_HOSTNAME}:8443
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=${EVO_API_KEY}
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/evolution?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_v2
+      - CACHE_REDIS_ENABLED=false
+      - CACHE_LOCAL_ENABLED=true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── n8n: automatización del envío (un workflow por sede) ───────────────────
+  n8n:
+    image: n8nio/n8n:2.38.5
+    container_name: vcm_n8n_app
+    restart: always
+    ports:
+      # Solo localhost: Tailscale Funnel (en el host) es la única entrada.
+      # Ojo: el host usa 5679 porque 5678 puede estar ocupado por otro stack.
+      - "127.0.0.1:5679:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=evolution
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_HOST=${TS_HOSTNAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${TS_HOSTNAME}/
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - GENERIC_TIMEZONE=America/Lima
+      - TZ=America/Lima
+    volumes:
+      - vcm_n8n_storage:/home/node/.n8n
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  vcm_db_storage:
+  vcm_n8n_storage:
