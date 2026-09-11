@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Webhook, Save, Eye, EyeOff } from 'lucide-react'
+import { Webhook, Save, Eye, EyeOff, Building2 } from 'lucide-react'
 import { Button, Card, Input } from '@/shared/components/ui'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
 import { maskUrl } from '@/lib/format'
@@ -9,12 +9,15 @@ export function WebhookTab() {
   const updateSettings = useSettingsStore((s) => s.updateSettings)
 
   const [webhookUrl, setWebhookUrl] = useState(settings.webhookUrl)
+  const [branchName, setBranchName] = useState(settings.branchName ?? '')
   const [showUrl, setShowUrl] = useState(false)
 
-  const dirty = webhookUrl !== settings.webhookUrl
+  const dirty =
+    webhookUrl !== settings.webhookUrl ||
+    branchName !== (settings.branchName ?? '')
 
   const handleSave = () => {
-    void updateSettings({ webhookUrl: webhookUrl.trim() })
+    void updateSettings({ webhookUrl: webhookUrl.trim(), branchName: branchName.trim() })
   }
 
   // Mask URL for display when not editing.
@@ -77,6 +80,29 @@ export function WebhookTab() {
         <Input
           value={settings.defaultCountryCode}
           readOnly
+          className="max-w-xs"
+        />
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="rounded-sm bg-vegetal-soft text-vegetal p-1.5">
+            <Building2 size={16} />
+          </span>
+          <h3 className="text-md font-semibold text-ink">Sede</h3>
+        </div>
+        <p className="text-sm text-ink-soft mb-4">
+          Nombre de esta sede (por ejemplo "Sede Norte"). Cada campaña guardada
+          en el historial llevará esta etiqueta, para que puedas comparar el
+          rendimiento entre sedes en el panel.
+        </p>
+        <label className="text-sm text-ink-soft block mb-1.5">
+          Nombre de la sede
+        </label>
+        <Input
+          value={branchName}
+          onChange={(e) => setBranchName(e.target.value)}
+          placeholder="Sede Norte"
           className="max-w-xs"
         />
       </Card>

@@ -100,4 +100,44 @@ export interface AppSettings {
   defaultCountryCode: string
   /** HMAC secret for signing n8n payloads. Supabase mode only. */
   hmacSecret?: string
+  /**
+   * Branch (sede) label captured on every campaign record. Free text for now:
+   * single-clinic MVP, forward-compatible with a future `branches` table.
+   */
+  branchName?: string
 }
+
+// ── Campaign history ──────────────────────────────────────────────────────────
+
+/**
+ * Historical record of one dispatch. Persisted by the storage layer
+ * (localStorage now, Supabase `campaigns` table later — same shape).
+ * In localStorage mode the persisted `payload` strips image data URIs
+ * (media.data) to stay far below the ~5MB browser quota; the image itself
+ * lives on the template.
+ */
+export interface CampaignRecord {
+  id: string
+  /** Auth user id (Supabase mode); empty string in localStorage mode. */
+  sentBy: string
+  totalRecipients: number
+  enabledRecipients: number
+  invalidRecipients: number
+  duplicateRecipients: number
+  payload: unknown
+  status: 'sent' | 'failed'
+  errorMessage: string | null
+  /** ISO timestamp, set by the storage layer at insert time. */
+  createdAt: string
+  /** Valid recipients not sent (manually disabled by the receptionist). */
+  excludedRecipients?: number
+  /** True for demo/test sends (mock webhook); real stats exclude these. */
+  mock?: boolean
+  /** Branch (sede) label captured from settings at send time. */
+  branch?: string
+  /** Source Excel file name. */
+  sourceFile?: string
+}
+
+/** A campaign record as passed by the send flow, before `createdAt` is set. */
+export type CampaignDraft = Omit<CampaignRecord, 'createdAt'>

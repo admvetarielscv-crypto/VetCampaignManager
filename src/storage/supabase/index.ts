@@ -10,7 +10,7 @@
 import { newId } from '@/lib/id'
 import { requireSupabase } from '@/integrations/supabase'
 import { useTenantStore } from '@/shared/stores/tenantStore'
-import type { Category, MessageTemplate } from '@/lib/types'
+import type { Category, MessageTemplate, CampaignDraft, CampaignRecord } from '@/lib/types'
 
 /**
  * Returns the current tenant id from the tenant store. Throws if there is no
@@ -255,31 +255,12 @@ export async function seedIfEmpty(): Promise<void> {
 }
 
 // ── Campaigns (historical record of each send) ──────────────────────────────
+// Shape lives in `lib/types.ts` (CampaignRecord). The new optional fields
+// (excludedRecipients, mock, branch, sourceFile) land in Supabase with a
+// future migration (0003); until then they are not inserted — the persisted
+// payload still carries the full dispatch evidence.
 
-export interface CampaignRecord {
-  id: string
-  sentBy: string
-  totalRecipients: number
-  enabledRecipients: number
-  invalidRecipients: number
-  duplicateRecipients: number
-  payload: unknown
-  status: 'sent' | 'failed'
-  errorMessage: string | null
-  createdAt: string
-}
-
-export async function recordCampaign(record: {
-  id: string
-  sentBy: string
-  totalRecipients: number
-  enabledRecipients: number
-  invalidRecipients: number
-  duplicateRecipients: number
-  payload: unknown
-  status: 'sent' | 'failed'
-  errorMessage: string | null
-}): Promise<void> {
+export async function recordCampaign(record: CampaignDraft): Promise<void> {
   const sb = requireSupabase()
   const { error } = await sb.from('campaigns').insert({
     id: record.id,

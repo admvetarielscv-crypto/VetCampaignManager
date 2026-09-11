@@ -17,6 +17,7 @@ import { useAuth } from '@/shared/hooks/useAuth'
 import {
   buildCampaignPayload,
   buildSendableRecipients,
+  defaultEnabledFor,
   type N8nCampaignPayload,
 } from '@/lib/campaign'
 import { newId } from '@/lib/id'
@@ -114,7 +115,13 @@ export function SendCampaign() {
     setPayload(previewPayload)
     const res = await sendCampaign(previewPayload, settings.webhookUrl)
     const totals = result.totals
-    // Persist campaign + audit entry (no-ops in localStorage mode).
+    // Valid recipients the receptionist turned off before sending.
+    const excludedCount = result.recipients.filter(
+      (r) =>
+        r.phoneStatus === 'valid' &&
+        !(recipientEnabled[r.id] ?? defaultEnabledFor(r)),
+    ).length
+    // Persist campaign + audit entry (localStorage envelope or Supabase table).
     void recordCampaign({
       id: previewPayload.campaign.id,
       sentBy: auth.userId,
@@ -122,6 +129,10 @@ export function SendCampaign() {
       enabledRecipients: sendable.length,
       invalidRecipients: totals.invalid,
       duplicateRecipients: totals.duplicate,
+      excludedRecipients: excludedCount,
+      mock: res.mock,
+      branch: settings.branchName,
+      sourceFile: fileName ?? undefined,
       payload: previewPayload,
       status: res.ok ? 'sent' : 'failed',
       errorMessage: res.ok ? null : (res.error ?? 'Error desconocido'),
