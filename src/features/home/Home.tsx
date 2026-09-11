@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { FileDown, FileSpreadsheet, ArrowRight, Send } from 'lucide-react'
 import { Button, Card, MessagePreview } from '@/shared/components/ui'
+import { DashboardPanel } from './DashboardPanel'
 import { APP } from '@/app/env'
 
 const DEMO_MESSAGE =
@@ -65,8 +66,13 @@ export default function Home() {
         />
       </Card>
 
+      {/* Campaign results: month, branches, trend */}
+      <div className="mt-8">
+        <DashboardPanel />
+      </div>
+
       {/* The flow is a real sequence: numbered steps carry true order */}
-      <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
         {STEPS.map(({ icon: Icon, title, text }, i) => (
           <Card key={title} className="p-4">
             <div className="flex items-center gap-2.5 mb-2">

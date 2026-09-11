@@ -37,3 +37,6 @@ dist-ssr
 
 # Sample Excel files (kept local only — may contain real client data)
 samples/
+
+# opencode agent working files (session plans, etc.)
+.opencode/

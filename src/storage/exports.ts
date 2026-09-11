@@ -4,6 +4,7 @@
  * and gets the right backend transparently.
  */
 import { HAS_SUPABASE } from '@/integrations/supabase'
+import type { CampaignRecord } from '@/lib/types'
 
 // ── localStorage implementation (always available) ────────────────────────────
 import {
@@ -28,6 +29,10 @@ import {
   DEFAULT_SETTINGS,
 } from './settings'
 import { seedIfEmpty as seedIfEmptyLocal } from './seed'
+import {
+  recordCampaign as recordCampaignLocal,
+  listCampaigns as listCampaignsLocal,
+} from './campaigns'
 
 // ── Supabase implementation (only used when HAS_SUPABASE) ────────────────────
 import * as supabaseStorage from './supabase'
@@ -125,41 +130,21 @@ export { DEFAULT_SETTINGS }
 export const seedIfEmpty = () =>
   pick(seedIfEmptyLocal, supabaseStorage.seedIfEmpty)()
 
-// ── Campaign + audit log (Supabase only — no-ops in localStorage mode) ──────
+// ── Campaign + audit log ──────────────────────────────────────────────────────
+// Campaigns persist on BOTH backends (localStorage envelope or the Supabase
+// `campaigns` table) — same shape, see `CampaignRecord` in `lib/types`.
+// The audit log is a Supabase-mode feature (no-ops in localStorage mode).
 
-export interface CampaignRecord {
-  id: string
-  sentBy: string
-  totalRecipients: number
-  enabledRecipients: number
-  invalidRecipients: number
-  duplicateRecipients: number
-  payload: unknown
-  status: 'sent' | 'failed'
-  errorMessage: string | null
-  createdAt: string
-}
+export type { CampaignRecord, CampaignDraft } from '@/lib/types'
+import type { AuditEntry } from './supabase'
+export type { AuditEntry }
 
-export interface AuditEntry {
-  id: number
-  userId: string | null
-  action: string
-  entityType: string | null
-  entityId: string | null
-  metadata: unknown
-  createdAt: string
-}
-
-const noopRecordCampaign = async () => {}
 const noopRecordAudit = async () => {}
-const emptyCampaigns = async (): Promise<CampaignRecord[]> => []
 const emptyAudit = async (): Promise<AuditEntry[]> => []
 
-export const recordCampaign = HAS_SUPABASE
-  ? supabaseStorage.recordCampaign
-  : noopRecordCampaign
+export const recordCampaign = pick(recordCampaignLocal, supabaseStorage.recordCampaign)
 export const listCampaigns: (limit?: number) => Promise<CampaignRecord[]> =
-  HAS_SUPABASE ? supabaseStorage.listCampaigns : emptyCampaigns
+  pick(listCampaignsLocal, supabaseStorage.listCampaigns)
 export const recordAudit = HAS_SUPABASE ? supabaseStorage.recordAudit : noopRecordAudit
 export const listAudit: (limit?: number) => Promise<AuditEntry[]> = HAS_SUPABASE
   ? supabaseStorage.listAudit

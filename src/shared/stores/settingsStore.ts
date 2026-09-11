@@ -57,6 +57,7 @@ interface SettingsState {
 const EMPTY_SETTINGS: AppSettings = {
   webhookUrl: '',
   defaultCountryCode: APP.defaultCountryCode,
+  branchName: '',
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -88,6 +89,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         ? (currentTenant?.defaultCountryCode ?? APP.defaultCountryCode)
         : (rawSettings as AppSettings).defaultCountryCode,
       hmacSecret: rawSettings.hmacSecret,
+      branchName: (rawSettings as AppSettings).branchName ?? '',
     }
 
     set({ categories, templates, settings, hydrated: true })
@@ -187,6 +189,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       webhookUrl: next.webhookUrl,
       defaultCountryCode: next.defaultCountryCode,
       hmacSecret: next.hmacSecret,
+      branchName: next.branchName ?? '',
     }
     await saveSettings(persisted)
     set({ settings: next })
