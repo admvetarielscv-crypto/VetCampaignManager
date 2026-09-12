@@ -20,11 +20,11 @@
 do $$
 declare
   -- ── EDITA ESTOS VALORES ──────────────────────────────────────────────────
-  v_tenant_name  text := 'TU VETERINARIA';          -- nombre visible
-  v_tenant_slug  text := 'tu-veterinaria';          -- slug único, minúsculas
+  v_tenant_name  text := 'ArielsClinic';          -- nombre visible
+  v_tenant_slug  text := 'arielsclinic';          -- slug único, minúsculas
   v_country_code text := '+51';
-  v_owner_email  text := 'dueno@tuveterinaria.com'; -- tu usuario (ve todas)
-  v_branch_names text[] := ARRAY['Sede Centro', 'Sede Norte', 'Sede Sur'];
+  v_owner_email  text := 'vet_ariel@hotmail.com'; -- tu usuario (ve todas)
+  v_branch_names text[] := ARRAY['San Martin', 'Los Olivos', 'San Miguel'];
   v_seed_base    boolean := true;                   -- clonar categorías base
   -- ────────────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ begin
   -- ── 2. Owner: debe existir en auth.users (lo invitaste desde el panel) ──
   select u.id into v_owner_id
   from auth.users u
-  where u.email = lower(v_owner_email)
+  where lower(u.email) = lower(v_owner_email)
   limit 1;
   if v_owner_id is null then
     raise exception 'No existe el usuario % en auth.users. Invítalo primero desde Authentication.', v_owner_email;
@@ -90,6 +90,6 @@ end $$;
 -- select t.id, u.id, 'recepcionista', b.id
 -- from public.tenants t
 -- join public.branches  b on b.tenant_id = t.id and b.name = 'Sede Centro'   -- ← sede del usuario
--- join auth.users       u on u.email = 'recepcionista1@tuveterinaria.com'   -- ← email del usuario
+-- join auth.users       u on lower(u.email) = lower('recepcionista1@tuveterinaria.com')   -- ← email del usuario
 -- where t.slug = 'tu-veterinaria'                                           -- ← slug de arriba
 -- on conflict (tenant_id, user_id) do update set branch_id = excluded.branch_id, role = excluded.role;

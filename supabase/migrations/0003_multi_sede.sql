@@ -132,8 +132,8 @@ as $$
       where b.tenant_id in (select public.current_user_tenant_ids())
     )
     else (
-      select m.branch_id from public.tenant_members
-      where user_id = (select auth.uid()) and branch_id is not null
+      select m.branch_id from public.tenant_members m
+      where m.user_id = (select auth.uid()) and m.branch_id is not null
     )
   end;
 $$;

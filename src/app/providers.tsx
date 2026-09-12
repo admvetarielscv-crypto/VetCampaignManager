@@ -17,7 +17,16 @@ export function AppProviders({ children }: { children: ReactNode }) {
     void tenantStore.hydrate()
   }
 
-  const loading = !settingsHydrated || (HAS_SUPABASE && !auth.authenticated)
+  // Two distinct waits, kept separate on purpose:
+  //  - waitingForAuth: the Supabase session check is still in flight.
+  //  - waitingForSettings: settings need to hydrate, but they can only hydrate
+  //    once the user is authenticated (Supabase) or immediately in
+  //    localStorage mode. Pre-login, settings WILL stay false; treating that
+  //    as a loading state would block /login forever (the original bug).
+  const waitingForAuth = HAS_SUPABASE && auth.loading
+  const waitingForSettings =
+    !settingsHydrated && (!HAS_SUPABASE || auth.authenticated)
+  const loading = waitingForAuth || waitingForSettings
 
   if (loading) {
     return (

@@ -26,6 +26,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.test
 !deploy/.env.example
 !deploy/.env.pc.example
 

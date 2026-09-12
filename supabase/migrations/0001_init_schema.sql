@@ -11,31 +11,9 @@ create type tenant_role as enum ('owner', 'admin', 'recepcionista');
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Helpers (security definer, run with table owner privileges to avoid RLS
 -- recursion when looking up the current user's tenant memberships)
+-- NOTE: defined AFTER the tables they reference — PostgreSQL validates SQL
+-- function bodies at CREATE time, so referenced tables must already exist.
 -- ─────────────────────────────────────────────────────────────────────────────
-
-create or replace function public.current_user_tenant_ids()
-returns setof bigint
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select tenant_id from public.tenant_members
-  where user_id = (select auth.uid())
-$$;
-
-create or replace function public.current_user_role(target_tenant_id bigint)
-returns tenant_role
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select role from public.tenant_members
-  where tenant_id = target_tenant_id
-    and user_id = (select auth.uid())
-  limit 1
-$$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Tenants (one row per veterinary clinic)
@@ -63,6 +41,35 @@ create table public.tenant_members (
 );
 
 create index tenant_members_user_id_idx on public.tenant_members(user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Helpers (security definer, run with table owner privileges to avoid RLS
+-- recursion when looking up the current user's tenant memberships)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create or replace function public.current_user_tenant_ids()
+returns setof bigint
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select tenant_id from public.tenant_members
+  where user_id = (select auth.uid())
+$$;
+
+create or replace function public.current_user_role(target_tenant_id bigint)
+returns tenant_role
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select role from public.tenant_members
+  where tenant_id = target_tenant_id
+    and user_id = (select auth.uid())
+  limit 1
+$$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Categories (per tenant)
@@ -274,8 +281,14 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.tenant_members (tenant_id, user_id, role)
-    values (new.id, auth.uid(), 'owner');
+  -- Grant ownership ONLY when the insert runs on behalf of an authenticated
+  -- user (SaaS signup flow from the app). Administrative tenants created via
+  -- SQL scripts run as the postgres/service role where `auth.uid()` is NULL —
+  -- those assign members explicitly in the setup script.
+  if (select auth.uid()) is not null then
+    insert into public.tenant_members (tenant_id, user_id, role)
+      values (new.id, auth.uid(), 'owner');
+  end if;
 
   insert into public.clinic_settings (tenant_id)
     values (new.id);

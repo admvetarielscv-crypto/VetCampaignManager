@@ -12,6 +12,8 @@ import { supabase, HAS_SUPABASE } from '@/integrations/supabase'
 export interface AuthContext {
   /** True when the app has a valid session (real or synthetic) */
   authenticated: boolean
+  /** True while the initial session check is still in flight */
+  loading: boolean
   /** Current user id (real Supabase user id or synthetic in localStorage mode) */
   userId: string
   /** Display label for the current user (email in Supabase mode, "Local" in localStorage) */
@@ -52,6 +54,7 @@ export function useAuth(): AuthContext {
   if (!HAS_SUPABASE) {
     return {
       authenticated: true,
+      loading: false,
       userId: LOCAL_USER_ID,
       userLabel: LOCAL_USER_LABEL,
       tenantId: null,
@@ -62,6 +65,7 @@ export function useAuth(): AuthContext {
   if (loading) {
     return {
       authenticated: false,
+      loading: true,
       userId: '',
       userLabel: '',
       tenantId: null,
@@ -72,6 +76,7 @@ export function useAuth(): AuthContext {
   const user: User | null = session?.user ?? null
   return {
     authenticated: user !== null,
+    loading: false,
     userId: user?.id ?? '',
     userLabel: user?.email ?? '',
     tenantId: null, // populated by tenantStore after login
