@@ -91,8 +91,10 @@ export const makeTemplate = (
 ) => pick(makeTemplateLocal, supabaseStorage.makeTemplate)(input)
 
 /**
- * Adapters between `AppSettings` (what feature code uses) and `ClinicSettings`
- * (what the Supabase storage layer returns).
+ * Adapters between `AppSettings` (what feature code uses) and the Supabase
+ * storage layer. In Supabase mode the webhook + HMAC live on the BRANCH row
+ * (migration 0003); the branch name comes from the same row so the UI can
+ * label what it is configuring.
  */
 const settingsAdapter = {
   get: async (): Promise<AppSettings> => {
@@ -102,6 +104,7 @@ const settingsAdapter = {
         webhookUrl: c.webhookUrl,
         defaultCountryCode: '', // filled by settingsStore from tenant
         hmacSecret: c.hmacSecret,
+        branchName: c.branchName,
       }
     }
     return getSettingsLocal()
@@ -111,6 +114,7 @@ const settingsAdapter = {
       await supabaseStorage.saveSettings({
         webhookUrl: s.webhookUrl,
         hmacSecret: s.hmacSecret ?? '',
+        branchName: s.branchName ?? '',
       })
       return s
     }

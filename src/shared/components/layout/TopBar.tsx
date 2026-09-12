@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import { Stepper, type StepperStep } from '@/shared/components/ui/Stepper'
+import { BranchContext } from './BranchContext'
 import { APP } from '@/app/env'
 
 const steps: StepperStep[] = [
@@ -24,9 +25,12 @@ export function TopBar() {
           {isCampaign ? 'Nueva campaña' : APP.productName}
         </h1>
       </div>
-      {isCampaign && stepIndex >= 0 && (
-        <Stepper steps={steps} currentIndex={stepIndex} />
-      )}
+      <div className="flex items-center gap-4">
+        <BranchContext />
+        {isCampaign && stepIndex >= 0 && (
+          <Stepper steps={steps} currentIndex={stepIndex} />
+        )}
+      </div>
     </header>
   )
 }
