@@ -32,7 +32,20 @@ const HistoryPage = lazy(() =>
 function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const location = useLocation()
-  if (HAS_SUPABASE && !auth.authenticated) {
+  if (!HAS_SUPABASE) {
+    return <>{children}</>
+  }
+  // Session check in flight: WAIT. Redirecting here (instead of waiting)
+  // unmounts this guard on every bounce, so each remount restarts the check
+  // and the app ping-pongs between "/" and "/login" forever.
+  if (auth.loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner />
+      </div>
+    )
+  }
+  if (!auth.authenticated) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
   return <>{children}</>

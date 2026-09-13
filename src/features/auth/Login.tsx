@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Loader2, PawPrint, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button, Card, Input } from '@/shared/components/ui'
 import { APP } from '@/app/env'
 import { requireSupabase, HAS_SUPABASE } from '@/integrations/supabase'
+import { useAuth } from '@/shared/hooks/useAuth'
 
 export function Login() {
   const navigate = useNavigate()
@@ -13,6 +14,19 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'signin' | 'signup' | 'magic'>('signin')
   const [busy, setBusy] = useState(false)
+  const auth = useAuth()
+
+  // Safety net for a state-propagation race: signInWithPassword may resolve
+  // before the SIGNED_IN event reaches useAuth, so RequireAuth can bounce the
+  // navigation back to /login. When the session lands (this effect), bring
+  // the user in. Also covers sessions persisted from a previous visit.
+  useEffect(() => {
+    if (!HAS_SUPABASE || !auth.authenticated) {
+      return
+    }
+    const from = (location.state as { from?: string } | null)?.from ?? '/'
+    navigate(from, { replace: true })
+  }, [auth.authenticated, navigate, location.state])
 
   if (!HAS_SUPABASE) {
     return (

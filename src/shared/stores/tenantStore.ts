@@ -88,14 +88,25 @@ export const useTenantStore = create<TenantState>((set, get) => ({
       (row: {
         role: Tenant['role']
         branch_id: number | null
-        tenant: {
-          id: string
-          slug: string
-          name: string
-          default_country_code: string
-        }[] | null
+        tenant:
+          | {
+              id: string
+              slug: string
+              name: string
+              default_country_code: string
+            }
+          | { id: string; slug: string; name: string; default_country_code: string }[]
+          | null
       }) => {
-        const list = row.tenant ?? []
+        // PostgREST embeds a many-to-one as an object (a membership points to
+        // exactly one tenant) — but older client typings may model it as an
+        // array. Normalize both.
+        const embedded = row.tenant
+        const list = Array.isArray(embedded)
+          ? embedded
+          : embedded
+            ? [embedded]
+            : []
         return list.map((t) => ({
           id: t.id,
           slug: t.slug,

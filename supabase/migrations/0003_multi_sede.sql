@@ -115,6 +115,9 @@ create table public.contacts (
 -- Branch ids the current user may access:
 --   owner/admin (branch_id NULL) → every branch of their tenants
 --   branch-bound member          → only their own branch
+-- Set-returning via UNION: a CASE branch cannot host a multi-row subquery
+-- (PostgreSQL error 21000 "more than one row returned by a subquery used as
+-- an expression").
 create or replace function public.current_user_branch_ids()
 returns setof bigint
 language sql
@@ -122,20 +125,22 @@ stable
 security definer
 set search_path = ''
 as $$
-  select case
-    when exists (
-      select 1 from public.tenant_members
-      where user_id = (select auth.uid()) and branch_id is null
-    )
-    then (
-      select b.id from public.branches b
-      where b.tenant_id in (select public.current_user_tenant_ids())
-    )
-    else (
-      select m.branch_id from public.tenant_members m
-      where m.user_id = (select auth.uid()) and m.branch_id is not null
-    )
-  end;
+  -- Owner/admin: every branch of the tenants where the user has a
+  -- "sees-all" membership (branch_id NULL).
+  select b.id
+  from public.branches b
+  where exists (
+    select 1 from public.tenant_members m
+    where m.user_id = (select auth.uid())
+      and m.branch_id is null
+      and m.tenant_id = b.tenant_id
+  )
+  union
+  -- Branch-bound member: exactly their assigned branch.
+  select m.branch_id
+  from public.tenant_members m
+  where m.user_id = (select auth.uid())
+    and m.branch_id is not null
 $$;
 
 -- Name of one branch the user may access (branch context for the UI).
