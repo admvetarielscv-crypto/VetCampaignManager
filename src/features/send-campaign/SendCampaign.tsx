@@ -23,7 +23,14 @@ import {
 import { newId } from '@/lib/id'
 import { maskUrl } from '@/lib/format'
 import { sendCampaign } from '@/integrations/n8n'
-import { recordCampaign, recordAudit } from '@/storage/exports'
+import {
+  recordCampaign,
+  recordAudit,
+  markContacted,
+  recordDeliveries,
+  type ContactEntry,
+  type DeliveryEntry,
+} from '@/storage/exports'
 
 type SendStatus = 'idle' | 'sending' | 'success' | 'error'
 
@@ -151,6 +158,29 @@ export function SendCampaign() {
     })
     if (res.ok) {
       setStatus('success')
+      // Real dispatch: stamp the branch's contact ledger (both backends) and
+      // write the initial 'queued' delivery rows (Supabase only — the local
+      // mode keeps counters on the campaign record to save quota). Demo
+      // sends record nothing: nothing actually left the app.
+      if (!res.mock) {
+        const contactEntries: ContactEntry[] = sendable
+          .map(({ recipient }) => ({
+            phone: recipient.normalizedPhone ?? recipient.rawPhone,
+            ownerName: recipient.owner,
+            petName: recipient.pet,
+          }))
+        void markContacted(contactEntries).catch((err) => {
+          console.warn('contact ledger update failed', err)
+        })
+        const deliveryEntries: DeliveryEntry[] = previewPayload.recipients.map(
+          (r) => ({ recipientId: r.id, phone: r.phone }),
+        )
+        void recordDeliveries(previewPayload.campaign.id, deliveryEntries).catch(
+          (err) => {
+            console.warn('delivery rows failed', err)
+          },
+        )
+      }
       if (res.mock) {
         toast.success('Prueba completada: no se envió nada de verdad.', {
           description: res.detail,

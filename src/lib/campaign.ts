@@ -91,12 +91,42 @@ export function renderMessageForRecipient(
 }
 
 /**
- * Default "enabled" state per recipient. Valid phones default to on;
- * duplicates and invalid phones default to off. The receptionist can toggle
- * each row in the preview. (Pure helper; the store persists the overrides.)
+ * Re-contact window: a phone contacted within the last N days is excluded by
+ * default (branch-scoped — contacts are per sede). Configurable later via
+ * settings if the business needs a different cadence.
  */
-export function defaultEnabledFor(recipient: Recipient): boolean {
-  return recipient.phoneStatus === 'valid'
+export const RECONTACT_DAYS = 7
+
+/** Whole days elapsed since the ISO instant, in the browser's timezone. */
+export function daysSince(iso: string, now = new Date()): number | null {
+  const then = new Date(iso)
+  if (Number.isNaN(then.getTime())) return null
+  return Math.floor((now.getTime() - then.getTime()) / 86_400_000)
+}
+
+/**
+ * True when the recipient should be excluded by default for contact-ledger
+ * reasons (branch-scoped): the branch contacted them within the re-contact
+ * window, or someone flagged them "NO CONTACTAR".
+ */
+export function recentlyContacted(recipient: Recipient, now = new Date()): boolean {
+  const last = recipient.contactState?.lastContactedAt
+  if (!last) return false
+  const days = daysSince(last, now)
+  return days !== null && days < RECONTACT_DAYS
+}
+
+/**
+ * Default "enabled" state per recipient:
+ *   valid phones without ledger flags → on;
+ *   duplicates and invalid phones → off (receptionist can toggle valid ones);
+ *   recently contacted by this branch → off;
+ *   "NO CONTACTAR" → off, permanently.
+ */
+export function defaultEnabledFor(recipient: Recipient, now = new Date()): boolean {
+  if (recipient.phoneStatus !== 'valid') return false
+  if (recipient.contactState?.doNotContact) return false
+  return !recentlyContacted(recipient, now)
 }
 
 export interface SendableRecipient {

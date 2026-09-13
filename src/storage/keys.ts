@@ -5,4 +5,5 @@ export const KEYS = {
   templates: namespaced('templates:v1'),
   settings: namespaced('settings:v1'),
   campaigns: namespaced('campaigns:v1'),
+  contacts: namespaced('contacts:v1'),
 } as const

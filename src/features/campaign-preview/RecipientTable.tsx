@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 import { ArrowUpDown, Inbox } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { daysSince } from '@/lib/campaign'
 import { Chip, Table, Tbody, Td, Th, Thead, Tr } from '@/shared/components/ui'
 import type { Recipient } from '@/lib/types'
 
@@ -136,7 +137,32 @@ export function RecipientTable({ rows, selectedId, onSelect, onToggle }: Props) 
         header: 'Estado',
         cell: ({ row }) => {
           const r = row.original
-          return <Chip tone={statusTone[r.phoneStatus]}>{statusLabel[r.phoneStatus]}</Chip>
+          const contact = r.contactState
+          const days = contact?.lastContactedAt
+            ? daysSince(contact.lastContactedAt)
+            : null
+          return (
+            <span className="flex flex-wrap gap-1">
+              <Chip tone={statusTone[r.phoneStatus]}>{statusLabel[r.phoneStatus]}</Chip>
+              {contact?.doNotContact && (
+                <Chip tone="danger" title="Marcado como NO CONTACTAR por esta sede">
+                  NO CONTACTAR
+                </Chip>
+              )}
+              {days !== null && days >= 0 && (
+                <Chip
+                  tone="warn"
+                  title={
+                    days === 0
+                      ? 'Esta sede le escribió hoy'
+                      : `Esta sede le escribió hace ${days} día(s)`
+                  }
+                >
+                  {days === 0 ? 'Hoy' : `Hace ${days}d`}
+                </Chip>
+              )}
+            </span>
+          )
         },
       }),
     ],

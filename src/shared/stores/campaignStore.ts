@@ -65,7 +65,10 @@ export const useCampaignStore = create<CampaignState>((set) => ({
   toggleRecipient: (id) =>
     set((s) => {
       const r = s.result?.recipients.find((x) => x.id === id)
-      if (!r || r.phoneStatus === 'invalid') return s
+      if (!r) return s
+      // Locked exclusions: invalid phones and branch-level "NO CONTACTAR".
+      // Recently-contacted phones CAN be force-enabled (manual override).
+      if (r.phoneStatus === 'invalid' || r.contactState?.doNotContact) return s
       return {
         recipientEnabled: {
           ...s.recipientEnabled,
@@ -81,7 +84,8 @@ export const useCampaignStore = create<CampaignState>((set) => ({
       const next = { ...s.recipientEnabled }
       for (const id of ids) {
         const r = s.result?.recipients.find((x) => x.id === id)
-        if (!r || r.phoneStatus === 'invalid') continue
+        if (!r) continue
+        if (r.phoneStatus === 'invalid' || r.contactState?.doNotContact) continue
         next[id] = enabled
       }
       return { recipientEnabled: next }

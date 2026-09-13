@@ -3,8 +3,12 @@ import {
   buildCampaignPayload,
   buildSendableRecipients,
   countByStatus,
+  daysSince,
+  defaultEnabledFor,
   normalizeCategoryName,
+  recentlyContacted,
   resolveTemplateByCategoryName,
+  RECONTACT_DAYS,
 } from '../campaign'
 import type { Category, MessageTemplate, Recipient } from '../types'
 
@@ -205,5 +209,90 @@ describe('countByStatus', () => {
       duplicate: 1,
       invalid: 1,
     })
+  })
+})
+
+// ── Contact ledger guard (S2) ─────────────────────────────────────────────────
+
+// Fixed "now" so day math is deterministic.
+const NOW = new Date('2026-09-12T12:00:00.000Z')
+
+describe('daysSince', () => {
+  test('whole days elapsed', () => {
+    expect(daysSince('2026-09-12T06:00:00.000Z', NOW)).toBe(0) // same day
+    expect(daysSince('2026-09-05T12:00:00.000Z', NOW)).toBe(7)
+    expect(daysSince('2026-09-01T12:00:00.000Z', NOW)).toBe(11)
+  })
+
+  test('invalid date → null', () => {
+    expect(daysSince('not-a-date', NOW)).toBeNull()
+  })
+})
+
+describe('recentlyContacted', () => {
+  test('within the window', () => {
+    const days = RECONTACT_DAYS - 1
+    const at = new Date(NOW.getTime() - days * 86_400_000).toISOString()
+    expect(
+      recentlyContacted(
+        mkRecipient({ contactState: { lastContactedAt: at, doNotContact: false } }),
+        NOW,
+      ),
+    ).toBe(true)
+  })
+
+  test('outside the window', () => {
+    const at = new Date(NOW.getTime() - (RECONTACT_DAYS + 5) * 86_400_000).toISOString()
+    expect(
+      recentlyContacted(
+        mkRecipient({ contactState: { lastContactedAt: at, doNotContact: false } }),
+        NOW,
+      ),
+    ).toBe(false)
+  })
+
+  test('no ledger state → not recently contacted', () => {
+    expect(recentlyContacted(mkRecipient(), NOW)).toBe(false)
+  })
+})
+
+describe('defaultEnabledFor with the contact ledger', () => {
+  test('valid without ledger state → enabled', () => {
+    expect(defaultEnabledFor(mkRecipient(), NOW)).toBe(true)
+  })
+
+  test('invalid/duplicate → disabled', () => {
+    expect(defaultEnabledFor(mkRecipient({ phoneStatus: 'invalid' }), NOW)).toBe(false)
+    expect(defaultEnabledFor(mkRecipient({ phoneStatus: 'duplicate' }), NOW)).toBe(false)
+  })
+
+  test('recently contacted by this branch → disabled by default', () => {
+    const at = new Date(NOW.getTime() - 2 * 86_400_000).toISOString()
+    expect(
+      defaultEnabledFor(
+        mkRecipient({ contactState: { lastContactedAt: at, doNotContact: false } }),
+        NOW,
+      ),
+    ).toBe(false)
+  })
+
+  test('contacted long ago → enabled again', () => {
+    const at = new Date(NOW.getTime() - 30 * 86_400_000).toISOString()
+    expect(
+      defaultEnabledFor(
+        mkRecipient({ contactState: { lastContactedAt: at, doNotContact: false } }),
+        NOW,
+      ),
+    ).toBe(true)
+  })
+
+  test('NO CONTACTAR → disabled even when contacted long ago', () => {
+    const at = new Date(NOW.getTime() - 30 * 86_400_000).toISOString()
+    expect(
+      defaultEnabledFor(
+        mkRecipient({ contactState: { lastContactedAt: at, doNotContact: true } }),
+        NOW,
+      ),
+    ).toBe(false)
   })
 })

@@ -3,7 +3,8 @@ import { parseWorkbook } from '@/lib/excel'
 import { validateRecipients } from '@/lib/recipients'
 import { useCampaignStore } from '@/shared/stores/campaignStore'
 import { useSettingsStore } from '@/shared/stores/settingsStore'
-import type { ImportResult } from '@/lib/types'
+import { findContactStates } from '@/storage/exports'
+import type { ImportResult, Recipient } from '@/lib/types'
 
 export type ImportStatus = 'idle' | 'parsing' | 'success' | 'error'
 
@@ -41,7 +42,32 @@ export function useExcelImport() {
           return
         }
 
-        setParsedResult(file.name, result)
+        // Attach the branch's contact ledger state (last contact + flags) so
+        // the preview can apply the re-contact guard and "NO CONTACTAR".
+        const phones = [
+          ...new Set(
+            result.recipients
+              .map((r) => r.normalizedPhone)
+              .filter((p): p is string => Boolean(p)),
+          ),
+        ]
+        let resultWithContacts = result
+        try {
+          const states = await findContactStates(phones)
+          const recipients: Recipient[] = result.recipients.map((r) => {
+            const state = r.normalizedPhone
+              ? (states.get(r.normalizedPhone) as Recipient['contactState'])
+              : undefined
+            return state ? { ...r, contactState: state } : r
+          })
+          resultWithContacts = { ...result, recipients }
+        } catch (err) {
+          // Ledger unavailable (offline/RLS): proceed without the guard —
+          // sending must never be blocked by a secondary read.
+          console.warn('contact ledger lookup failed', err)
+        }
+
+        setParsedResult(file.name, resultWithContacts)
         setStatus('success')
       } catch (err) {
         setStatus('error')

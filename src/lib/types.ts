@@ -5,6 +5,18 @@
 
 export type PhoneStatus = 'valid' | 'invalid' | 'duplicate'
 
+/**
+ * What this branch's contact ledger knows about a phone. Attached to
+ * recipients after import; drives the re-contact guard and the
+ * "NO CONTACTAR" exclusion. Branch-scoped: each sede has its own client
+ * base, so states are never compared across sedes.
+ */
+export interface ContactState {
+  /** ISO timestamp of the last campaign this branch sent to the phone. */
+  lastContactedAt?: string
+  doNotContact: boolean
+}
+
 export interface Recipient {
   /** Stable client-side id (nanoid) — Supabase-row-compatible later. */
   id: string
@@ -21,6 +33,8 @@ export interface Recipient {
   phoneStatus: PhoneStatus
   /** Short reason when invalid/duplicate, omit when valid. */
   issue?: string
+  /** Contact ledger state (attached after import when the phone is known). */
+  contactState?: ContactState
 }
 
 export interface ImportError {
@@ -141,3 +155,14 @@ export interface CampaignRecord {
 
 /** A campaign record as passed by the send flow, before `createdAt` is set. */
 export type CampaignDraft = Omit<CampaignRecord, 'createdAt'>
+
+// ── Delivery reports ──────────────────────────────────────────────────────────
+
+/**
+ * Per-message delivery status for an attempted send.
+ * - `queued`: dispatched to the webhook (the app writes this).
+ * - `delivered` | `failed`: reported back by n8n/Evolution (backend only).
+ * Excluded/invalid/duplicate recipients get no row — they were never
+ * attempted; their counts live on the campaign record.
+ */
+export type DeliveryStatus = 'queued' | 'delivered' | 'failed'

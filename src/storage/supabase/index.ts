@@ -15,7 +15,19 @@ import type {
   MessageTemplate,
   CampaignDraft,
   CampaignRecord,
+  ContactState,
 } from '@/lib/types'
+
+export interface ContactEntry {
+  phone: string
+  ownerName: string
+  petName: string
+}
+
+export interface DeliveryEntry {
+  recipientId: string
+  phone: string
+}
 
 /**
  * Returns the current tenant id from the tenant store. Throws if there is no
@@ -274,6 +286,103 @@ export async function seedIfEmpty(): Promise<void> {
   // templates are added by the user (or seeded by running `0002_seed_demo.sql`).
   // The auth hook calls `tenantStore.hydrate()` which loads real data.
   return
+}
+
+// ── Contacts (branch-scoped ledger — migration 0005) ─────────────────────────
+
+export async function findContactStates(
+  phones: string[],
+): Promise<Map<string, ContactState>> {
+  if (phones.length === 0) return new Map()
+  const sb = requireSupabase()
+  const { data, error } = await sb
+    .from('contacts')
+    .select('phone, last_contacted_at, do_not_contact')
+    .eq('branch_id', branchId())
+    .in('phone', phones)
+  if (error) throw error
+  const states = new Map<string, ContactState>()
+  for (const row of data ?? []) {
+    states.set(row.phone, {
+      lastContactedAt: row.last_contacted_at ?? undefined,
+      doNotContact: row.do_not_contact,
+    })
+  }
+  return states
+}
+
+export async function markContacted(entries: ContactEntry[]): Promise<void> {
+  if (entries.length === 0) return
+  const sb = requireSupabase()
+  const bid = branchId()
+  const tid = tenantId()
+  const now = new Date().toISOString()
+  const phones = entries.map((e) => e.phone)
+
+  // Two-step instead of upsert: an upsert would overwrite the primary key
+  // (nanoid) on every send, breaking future joins (replies, contact history).
+  // Select what exists → update those, insert the rest with fresh ids.
+  const { data: existing, error: selErr } = await sb
+    .from('contacts')
+    .select('id, phone')
+    .eq('branch_id', bid)
+    .in('phone', phones)
+  if (selErr) throw selErr
+
+  const existingByPhone = new Map((existing ?? []).map((r) => [r.phone, r.id]))
+
+  const toInsert = entries
+    .filter((e) => !existingByPhone.has(e.phone))
+    .map((e) => ({
+      id: newId(),
+      tenant_id: tid,
+      branch_id: bid,
+      phone: e.phone,
+      owner_name: e.ownerName,
+      pet_name: e.petName,
+      last_contacted_at: now,
+    }))
+  if (toInsert.length > 0) {
+    const { error: insErr } = await sb.from('contacts').insert(toInsert)
+    if (insErr) throw insErr
+  }
+
+  const toUpdate = entries.filter((e) => existingByPhone.has(e.phone))
+  for (const e of toUpdate) {
+    // Per-row update: keeps owner/pet names fresh and stamps the contact time.
+    // (Volume is small — one campaign's recipients — so N updates are fine.)
+    const { error: updErr } = await sb
+      .from('contacts')
+      .update({
+        owner_name: e.ownerName,
+        pet_name: e.petName,
+        last_contacted_at: now,
+      })
+      .eq('id', existingByPhone.get(e.phone))
+    if (updErr) throw updErr
+  }
+}
+
+// ── Campaign deliveries (one row per attempted message) ─────────────────────
+
+/** Insert the initial 'queued' rows for a dispatched campaign. */
+export async function recordDeliveries(
+  campaignId: string,
+  entries: DeliveryEntry[],
+): Promise<void> {
+  if (entries.length === 0) return
+  const sb = requireSupabase()
+  const { error } = await sb.from('campaign_deliveries').insert(
+    entries.map((e) => ({
+      campaign_id: campaignId,
+      recipient_id: e.recipientId,
+      tenant_id: tenantId(),
+      branch_id: branchId(),
+      phone: e.phone,
+      status: 'queued' as const,
+    })),
+  )
+  if (error) throw error
 }
 
 // ── Campaigns (historical record of each send) ──────────────────────────────
